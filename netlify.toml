@@ -1,13 +1,4 @@
 [build]
-​Netlify will run this command, but since our app is just index.html,
-​we simply echo a message.
-​command = "echo 'Building static HTML site...'"
-​The output directory where the index.html is located
-​publish = "/"
-​The directory where Netlify can find your serverless functions
-​functions = "functions"
-​Optional: Set a simple redirect for single-page application routing if needed
-​[[redirects]]
-​from = "/*"
-​to = "/index.html"
-​status = 200
+command = "echo 'Building static HTML site...'"
+publish = "/"
+functions = "functions"
