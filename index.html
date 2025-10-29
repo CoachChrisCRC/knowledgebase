@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gymini AI Knowledge Hub</title>
-    <!-- Load Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Load React, ReactDOM, and Babel for JSX compilation -->
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <!-- Load Tailwind CSS CDN --><script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load React, ReactDOM, and Babel for JSX compilation --><script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Load Font Awesome (CDN - More reliable for single-file deployment) --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLMDJz9TTB8bH71X/xZ8Wf1F0x5G8R2Y5L5rE/6t6iFwP1u6t5tG3/H9k0Z1p8Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     
     <script>
         tailwind.config = {
@@ -26,12 +26,6 @@
         }
     </script>
     
-    <!-- Load Lucide Icons (Used for the UI icons) -->
-    <script type="module">
-        import { createIcons, icons } from 'https://unpkg.com/lucide@latest';
-        window.lucide = icons;
-    </script>
-    
 </head>
 <body class="bg-gray-50 font-sans antialiased">
 
@@ -40,24 +34,28 @@
 <script type="text/babel">
     const { useState, useEffect, useRef } = React;
 
-    // --- ICON UTILITY (Using Lucide) ---
+    // --- ICON UTILITY (Using Font Awesome Classes) ---
     const Icon = ({ name, className }) => {
-        // Fallback mapping for the specific icons used in the app
-        const iconsMap = {
-            Apple: 'apple', Dumbbell: 'dumbbell', Zap: 'zap', ChevronDown: 'chevron-down', List: 'list',
-            X: 'x', Gauge: 'gauge', Soup: 'soup', MessageSquare: 'message-square', Send: 'send',
-            Loader: 'loader', Brain: 'brain', Goal: 'goal', BookOpen: 'book-open'
+        // Map abstract icon names to Font Awesome classes
+        const iconClasses = {
+            BookOpen: 'fa-solid fa-book-open',
+            Brain: 'fa-solid fa-brain',
+            Apple: 'fa-solid fa-apple-whole',
+            Dumbbell: 'fa-solid fa-dumbbell',
+            Zap: 'fa-solid fa-bolt',
+            ChevronDown: 'fa-solid fa-chevron-down',
+            List: 'fa-solid fa-list',
+            X: 'fa-solid fa-xmark',
+            Send: 'fa-solid fa-paper-plane',
+            Loader: 'fa-solid fa-spinner',
         };
-        const iconName = iconsMap[name] || 'zap';
+        const iconClass = iconClasses[name] || 'fa-solid fa-circle-question';
 
-        // Using a simple inline SVG wrapper as a fallback/simplification 
-        // because the full Lucide component import is complex in a single HTML file.
-        // For this environment, we just use a placeholder class.
-        return <div className={`inline-block ${className} flex-shrink-0`} aria-hidden="true" style={{ fontSize: '1.2em' }}>{iconName.charAt(0).toUpperCase()}</div>;
+        return <i className={`${iconClass} ${className} flex-shrink-0`} aria-hidden="true" />;
     };
 
 
-    // --- MARKDOWN RENDERING UTILITY (UPDATED FOR BOLDING, LISTS, AND HEADINGS) ---
+    // --- MARKDOWN RENDERING UTILITY ---
     const renderMarkdown = (text) => {
         if (!text) return null;
         const lines = text.split('\n');
@@ -110,12 +108,10 @@
     };
 
 
-    // --- CORE KNOWLEDGE DATA (Partial for brevity, keeping structure) ---
+    // --- CORE KNOWLEDGE DATA (NOW FULLY RESTORED) ---
     const ACCENT_COLOR = 'text-black';
     const ACCENT_CLASS = 'bg-black hover:bg-gray-800';
 
-    // (NOTE: The full knowledgeSections data is truncated here for brevity and length limits, 
-    // but the final structure mirrors the previous .jsx file, and it is ready for deployment.)
     const knowledgeSections = [
         {
             id: 'home',
@@ -141,7 +137,14 @@
                     title: 'Calorie Balance: The Simple Math of Weight Change',
                     body: 'Whether you gain, lose, or maintain weight comes down to one fundamental principle: **Energy Balance** (Calories In vs. Calories Out). Everything else is secondary.\n\nThe "Calories Out" side is called your **Total Daily Energy Expenditure (TDEE)**. It’s the total energy your body burns every day, which is made up of four main factors:\n\n* **Resting Metabolism (BMR):** Energy used for basic survival (breathing, circulating blood). This is the biggest factor.\n* **Digesting Food (TEF):** Energy used to process the food you eat. **Protein requires the most energy to digest,** which is one reason it’s great for weight loss.\n* **Daily Movement (NEAT):** Energy from non-exercise activity like walking, standing, and fidgeting. This is highly variable and often the biggest difference between two people\'s daily burn.\n* **Workouts (EAT):** Calories burned during structured exercise.\n\nTo achieve **Fat Loss**, you need a consistent **Calorie Deficit** (eating slightly fewer calories than your TDEE). To achieve **Muscle Gain**, you need a small **Calorie Surplus** (eating slightly more than your TDEE). '
                 },
-                // ... (rest of the nutrition content truncated for file length)
+                {
+                    title: 'Protein: The Most Important Macro',
+                    body: 'Protein is the most crucial macronutrient for anyone trying to build muscle, lose fat, or improve body composition. It provides the **building blocks (amino acids)** necessary to repair and grow muscle tissue after training.\n\n**Key Facts:**\n\n* **Satiety:** Protein is highly satiating, meaning it helps you feel full, which is vital for managing calorie intake.\n* **Thermic Effect (TEF):** Protein has a higher thermic effect than carbs or fat, meaning your body burns more calories just to digest it.\n* **Goal Intake:** Aim for **0.8g to 1.2g of protein per pound of desired body weight** (or 1.8g to 2.6g per kg of body weight). \n\n**Practical Sources:** Chicken breast, lean beef, fish (tuna, salmon), eggs, Greek yogurt, cottage cheese, and protein powders (whey or plant-based).'
+                },
+                {
+                    title: 'Carbohydrates and Fats: Energy and Hormones',
+                    body: 'Carbs and fats are essential for energy, brain function, and hormone regulation. They are often needlessly feared.\n\n### Carbohydrates (The Engine Fuel)\n\n* **Role:** Primary energy source for high-intensity training and brain function. Replenishes muscle **glycogen** stores.\n* **Types:** **Complex Carbs** (oats, brown rice, whole grains) provide sustained energy and fiber. **Simple Carbs** (fruit, refined sugar) provide quick energy.\n* **Timing:** Consume most carbs around your workouts (pre- and post-workout) to maximize performance and recovery.\n\n### Dietary Fats (The Regulator)\n\n* **Role:** Crucial for hormone production (like testosterone), brain health, nutrient absorption (Vitamins A, D, E, K), and insulating organs.\n* **Types:** Focus on **Unsaturated Fats** (avocados, nuts, olive oil, fatty fish) and limit Saturated/Trans Fats.\n* **Caution:** Fat is calorie-dense (9 calories per gram vs. 4 for protein/carbs), so track portions carefully, especially when in a calorie deficit.'
+                },
             ]
         },
         {
@@ -154,7 +157,14 @@
                     title: 'Progressive Overload: Challenging Yourself Just a Little More',
                     body: 'The only way your body changes is if you constantly give it a reason to. **Progressive Overload** simply means finding a way to make your workouts slightly harder over time. If you do the exact same workout with the exact same weight every week, your body has no incentive to build muscle or get stronger.\n\nStrive to apply at least one of these challenges to your main exercises *each week*:\n\n* **Lift Heavier (Load):** Add a small amount of weight (like 2.5 lbs or 1kg) to your barbell or machine. This is one of the fastest ways to get stronger and build density.\n* **Do More Reps (Volume):** Complete one or two extra repetitions on a set.\n* **Do More Sets (Volume):** Add one entire working set to an exercise.\n* **Rest Less (Density):** Complete the same workout but actively cut your rest periods by 15-30 seconds. This improves your overall work capacity.\n* **Slow Down (Time Under Tension):** Deliberately take 3-4 seconds to lower the weight (the eccentric phase). This makes the muscle work harder and feel the tension.'
                 },
-                // ... (rest of the training content truncated for file length)
+                {
+                    title: 'Rep Ranges and Intensity (RIR)',
+                    body: 'The number of repetitions (reps) you choose is directly linked to the desired training outcome.\n\n### Rep Ranges\n\n* **Strength (1-5 Reps):** Builds maximum strength by emphasizing heavy loads and neural drive.\n* **Hypertrophy (6-15 Reps):** The ideal range for building muscle size (most common range in programs).\n* **Endurance (15+ Reps):** Builds muscular stamina and work capacity.\n\n### Intensity (RIR)\n\n**Reps In Reserve (RIR)** is a modern, effective way to gauge how hard you are truly pushing. RIR means how many more full repetitions you could have done before total failure.\n\n* **RIR 3-4 (Easy/Warm-up):** The weight felt light, you could have done 3-4 more reps.\n* **RIR 1-2 (Optimal Hypertrophy):** This is the sweet spot. The set felt difficult, and you could only do 1-2 more reps before your form broke down.\n* **RIR 0 (Failure):** You could not complete another rep. This should be used sparingly, primarily on final sets of accessory work.'
+                },
+                {
+                    title: 'The Science of Recovery (Sleep)',
+                    body: 'You don\'t build muscle *during* a workout; you build it *during recovery*. **Sleep is non-negotiable** for progress.\n\n* **Muscle Repair:** Growth hormone and testosterone peak during deep sleep, facilitating muscle protein synthesis and repair.\n* **Fat Loss:** Lack of sleep disrupts two key hormones:\n    * **Ghrelin (Hunger Hormone):** Increases when sleep-deprived, making you feel hungrier.\n    * **Leptin (Satiety Hormone):** Decreases when sleep-deprived, meaning you feel less full.\n* **Cognition:** Poor sleep severely impairs focus, motivation, and coordination, leading to worse workouts and a higher risk of injury.\n\n**Goal:** Aim for **7-9 hours** of quality sleep per night. Implement a "power-down" routine (no screens 30-60 minutes before bed) to improve sleep quality.'
+                },
             ]
         },
         {
@@ -167,7 +177,14 @@
                     title: 'SMART Goals: Making Your Wishes Actionable',
                     body: 'Wishing for a goal is not enough—you need a clear roadmap. Goals must be **SMART** to provide clarity and keep you on track:\n\n* **S**pecific: "Lose 10 lbs" vs. "Feel better."\n* **M**easurable: Track progress with numbers (weight, reps, body measurements).\n* **A**chievable: Challenging but realistic for your current life.\n* **R**elevant: Aligns with your deep reasons for wanting to change.\n* **T**ime-bound: Set a specific deadline.\n\n**Focus on the Daily Process:** While the outcome (e.g., "Lose 20 lbs") is the destination, your daily focus should be on the **process** (e.g., "Hit my protein goal today," or "Get my 8,000 steps in"). You control the process; the outcome is the reward for following it.'
                 },
-                // ... (rest of the mindset content truncated for file length)
+                {
+                    title: 'The Plateaus and Setbacks',
+                    body: 'Progress is not a straight line—it’s an uneven road with plateaus (stalling progress) and setbacks (injuries, missed workouts, holidays).\n\n### The Plateau Solution\n\nIf your progress stalls for two weeks or more, try one of these strategies:\n\n* **Deload:** Take a scheduled week of light training (50% of your normal weight/volume). This helps your body recover from accumulated fatigue. You\'ll often come back stronger.\n* **Change Rep Ranges:** Switch from hypertrophy (8-12 reps) to strength (4-6 reps) for a few weeks to introduce a new stimulus.\n* **Check Compliance:** Honestly review your diet and sleep. Plateaus are almost always caused by an overlooked calorie creep or poor recovery.\n\n### Handling Setbacks\n\nDon\'t let a temporary failure (a missed day, a holiday) derail your entire journey. Get back to your routine immediately. One bad day doesn\'t erase weeks of consistency.'
+                },
+                {
+                    title: 'Habit Stacking and Environment Design',
+                    body: 'The key to long-term success is making good habits **easy** and bad habits **difficult**.\n\n* **Habit Stacking:** Attach a new habit to an existing one. **Example:** *“After I pour my morning coffee (existing habit), I will drink a large glass of water (new habit).”*\n* **Environment Design:** Set up your surroundings for success.\n    * **Goal:** Eating more fruit? **Action:** Leave a bowl of apples right next to your keys.\n    * **Goal:** Hitting the gym? **Action:** Lay out your gym clothes the night before, and pack your bag right after dinner.\n\nThis removes the need for motivation, which is unreliable. You rely on friction-less systems instead.'
+                }
             ]
         },
     ];
@@ -183,7 +200,7 @@
                 aria-controls={`content-${item.title.replace(/\s/g, '-')}`}
             >
                 <span>{item.title}</span>
-                <Icon name="ChevronDown" className={`w-5 h-5 transition-transform ${isActive ? 'transform rotate-180' : ''}`} />
+                <Icon name="ChevronDown" className={`w-4 h-4 transition-transform ${isActive ? 'transform rotate-180' : ''}`} />
             </button>
             <div
                 id={`content-${item.title.replace(/\s/g, '-')}`}
@@ -200,8 +217,9 @@
         <div className="space-y-8 p-6 bg-white rounded-xl shadow-lg border-t-8 border-black min-h-[600px] flex flex-col justify-center">
             <header className="text-center">
                 <div className="flex items-center justify-center space-x-3 mb-4">
-                    <Icon name="BookOpen" className={`w-12 h-12 ${color}`} />
-                    <Icon name="Brain" className={`w-12 h-12 ${color}`} />
+                    {/* UPDATED: Larger icons here */}
+                    <Icon name="BookOpen" className={`w-16 h-16 ${color}`} />
+                    <Icon name="Brain" className={`w-16 h-16 ${color}`} />
                 </div>
                 <h2 className="text-4xl sm:text-5xl font-extrabold text-gray-900 tracking-tight">
                     CLIENT KNOWLEDGE BASE
@@ -258,7 +276,7 @@
     // --- END UTILITY COMPONENTS ---
 
 
-    // --- AI BRAIN COMPONENT (CRITICAL CHANGES HERE) ---
+    // --- AI BRAIN COMPONENT ---
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
     const AICoach = () => {
@@ -274,7 +292,7 @@
 
         const formRef = useRef(null); 
 
-        // CRITICAL CHANGE: API URL now points to the Netlify Function Proxy
+        // CRITICAL: API URL points to the Netlify Function Proxy
         const apiUrl = '/.netlify/functions/gemini_proxy'; 
 
         const nutritionQueries = ["How much protein do I actually need to build muscle?", "Explain the difference between simple and complex carbs.", "What are the benefits of taking creatine?", "What are good sources of healthy dietary fats?"];
@@ -307,7 +325,7 @@
 
                 while (attempt < maxRetries) {
                     try {
-                        // CRITICAL CHANGE: Send the prompt to the Netlify Proxy
+                        // Send the prompt to the Netlify Proxy
                         const apiResponse = await fetch(apiUrl, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -354,7 +372,8 @@
             setQuery(suggestion);
             setTimeout(() => {
                 if (formRef.current) {
-                    formRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                    // Manually trigger the submit event via the form ref
+                    handleSubmit({ preventDefault: () => {} }); 
                 }
             }, 0);
         };
@@ -624,5 +643,4 @@
 </script>
 </body>
 </html>
-
 
