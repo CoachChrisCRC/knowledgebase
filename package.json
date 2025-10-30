@@ -1,0 +1,13 @@
+{
+  "name": "netlify-gemini-knowledge-base",
+  "version": "1.0.0",
+  "description": "A single-page React app with a Netlify function to proxy Gemini API calls.",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.7"
+  }
+}
+
