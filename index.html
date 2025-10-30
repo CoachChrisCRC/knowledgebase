@@ -1,837 +1,873 @@
-import React, { useState, useEffect } from 'react';
-import { Apple, Dumbbell, Zap, ChevronDown, List, X, Gauge, Soup, MessageSquare, Send, Loader, Brain, Goal, BookOpen } from 'lucide-react'; 
-
-// Mock Icon Mapping (Must be defined outside components)
-const Icon = ({ name, className }) => {
-  // Added BookOpen to the icons object
-  const icons = { Apple, Dumbbell, Zap, ChevronDown, List, X, Gauge, Soup, MessageSquare, Send, Loader, Brain, Goal, BookOpen };
-  // Fallback to a safe icon (Zap) if the name doesn't match
-  const LucideIcon = icons[name] || Zap; 
-  return <LucideIcon className={className} />;
-};
-
-// --- MARKDOWN RENDERING UTILITY (UPDATED FOR BOLDING, LISTS, AND HEADINGS) ---
-const renderMarkdown = (text) => {
-  if (!text) return null;
-  const lines = text.split('\n');
-  
-  // 1. Inline bolding utility (local to this function)
-  const renderBolding = (t) => {
-    // This function handles the **...** syntax
-    const parts = t.split(/(\*\*.*?\*\*)/g);
-    return parts.map((part, index) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        const boldText = part.slice(2, -2);
-        // Use Tailwind class 'font-bold text-gray-900' for rendering
-        return <strong key={index} className="font-bold text-gray-900">{boldText}</strong>;
-      }
-      return part;
-    });
-  };
-
-  // 2. Block-level parsing
-  return lines.map((line, index) => {
-    const trimmedLine = line.trim();
-    if (!trimmedLine) return null;
-
-    // Headings (###)
-    if (trimmedLine.startsWith('###')) {
-      const content = trimmedLine.replace(/^#+\s*/, '');
-      return (
-        <h3 key={index} className="text-lg font-extrabold text-gray-900 mt-4 mb-1">
-          {renderBolding(content)}
-        </h3>
-      );
-    }
-
-    // List Items (*)
-    if (trimmedLine.startsWith('* ')) {
-      const content = trimmedLine.substring(2);
-      // Render as a div with a bullet point icon for visual list effect
-      return (
-        <div key={index} className="flex items-start text-gray-700 text-sm mt-1 pl-1">
-          <span className="text-gray-900 mr-2 mt-1">•</span>
-          <p className="flex-1">{renderBolding(content)}</p>
-        </div>
-      );
-    }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fitness Knowledge Base | Monochrome</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     
-    // Paragraph (P) - Default behavior
-    return (
-      <p key={index} className="text-gray-700 leading-relaxed mt-2 text-sm">
-        {renderBolding(trimmedLine)}
-      </p>
-    );
-  }).filter(Boolean); // Filter out empty lines
-};
+    <!-- Load Inter Font -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background to frame the white card */
+        }
+        /* Custom spinner animation for the loader icon */
+        .fa-spin-fast {
+            animation: fa-spin 0.6s linear infinite;
+        }
+        @keyframes fa-spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+    
+    <!-- NEW: Load Font Awesome CDN for reliable icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLMDJ8uR027G+2U5rW4oYk7yR0G/d1Xw8U4y5l8rL5p4GfN/r6Q0+g6kXoPq2Z/g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Load React and Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+    <div id="root">
+        <!-- React content will be rendered here -->
+    </div>
+
+    <script type="text/babel">
+    
+    // --- ICON COMPONENT (REPLACED WITH FONT AWESOME) ---
+    // Mapping internal names to Font Awesome classes
+    const iconMap = {
+        BookOpen: 'fa-book-open',
+        Brain: 'fa-brain',
+        Apple: 'fa-apple-alt', // Food-related apple icon
+        Dumbbell: 'fa-dumbbell',
+        Zap: 'fa-bolt', // Lightning
+        ChevronDown: 'fa-chevron-down',
+        List: 'fa-bars', // Menu icon
+        X: 'fa-times', // Close icon
+        Loader: 'fa-spinner fa-spin-fast', // Spinner for loading
+        Send: 'fa-paper-plane',
+        Goal: 'fa-bullseye',
+        Soup: 'fa-bowl-food',
+        Gauge: 'fa-gauge',
+        MessageSquare: 'fa-comment-alt',
+    };
+
+    const Icon = ({ name, className }) => {
+        const faClass = iconMap[name] || iconMap.Zap; // Fallback to bolt
+        return (
+            <i className={`fas ${faClass} ${className}`}></i>
+        );
+    };
+    // --- END ICON COMPONENT ---
 
 
-// --- CORE KNOWLEDGE DATA ---
+    // Mocking global variables needed by the execution environment
+    // These are often provided at runtime but mocked here for standalone execution.
+    const __app_id = 'mock-app-id';
+    const __firebase_config = '{}';
+    const __initial_auth_token = 'mock-token';
 
-// MONOCHROME THEME VARIABLES
-const ACCENT_COLOR = 'text-black';
-const ACCENT_CLASS = 'bg-black hover:bg-gray-800';
+    // --- MARKDOWN RENDERING UTILITY (UNCHANGED) ---
+    const renderMarkdown = (text) => {
+      if (!text) return null;
+      
+      // Split the text by the bold markers (**...**) while keeping the markers
+      const parts = text.split(/(\*\*.*?\*\*)/g);
 
-const knowledgeSections = [
-  {
-    id: 'home',
-    title: 'Home / Performance Overview',
-    icon: 'BookOpen', // Sidebar icon remains BookOpen
-    color: ACCENT_COLOR,
-    content: null, // Home uses a dedicated component
-  },
-  {
-    id: 'ai-brain',
-    title: 'Gymini: AI Coaching Brain', // UPDATED TITLE HERE
-    icon: 'Brain',
-    color: ACCENT_COLOR, // UPDATED COLOR FOR PROMINENCE
-    content: null, // AI section uses a dedicated component
-  },
-  {
-    id: 'nutrition',
-    title: 'Nutrition & Fueling',
-    icon: 'Apple',
-    color: 'text-gray-700',
-    content: [
-      {
-        title: 'Calorie Balance: The Simple Math of Weight Change',
-        body: 'Whether you gain, lose, or maintain weight comes down to one fundamental principle: **Energy Balance** (Calories In vs. Calories Out). Everything else is secondary.\n\nThe "Calories Out" side is called your **Total Daily Energy Expenditure (TDEE)**. It’s the total energy your body burns every day, which is made up of four main factors:\n\n* **Resting Metabolism (BMR):** Energy used for basic survival (breathing, circulating blood). This is the biggest factor.\n* **Digesting Food (TEF):** Energy used to process the food you eat. **Protein requires the most energy to digest,** which is one reason it’s great for weight loss.\n* **Daily Movement (NEAT):** Energy from non-exercise activity like walking, standing, and fidgeting. This is highly variable and often the biggest difference between two people\'s daily burn.\n* **Workouts (EAT):** Calories burned during structured exercise.\n\nTo achieve **Fat Loss**, you need a consistent **Calorie Deficit** (eating slightly fewer calories than your TDEE). To achieve **Muscle Gain**, you need a small **Calorie Surplus** (eating slightly more than your TDEE). '
-      },
-      {
-        title: 'Protein: The Building Block for Muscle and Fullness',
-        body: 'Protein is the most important nutrient for changing your body shape. It provides the **amino acids** (tiny building blocks) your body needs to repair and build muscle tissue after training. It also has the biggest impact on **satiety** (feeling full).\n\n**The \'Per Meal\' Rule:** To maximize muscle repair and growth, you need to hit a certain amount of protein in a single sitting to send a strong signal to your body. Aim for **25–30 grams of high-quality protein** at most meals.\n\n**Daily Goal:** Most people do well aiming for **0.8 to 1 gram of protein per pound of your GOAL body weight**. Spreading this intake across **4–5 meals/snacks** throughout the day is the best strategy to keep your body in a repair and growth state, and most importantly, keep you feeling satisfied.'
-      },
-      {
-        title: 'Carbohydrates: Your Fast-Burning Energy Fuel',
-        body: 'Carbohydrates are your body’s preferred source of fast energy, especially for intense activities like strength training or sprinting. Carbs are stored in your muscles and liver as **Glycogen**, which is like a rapid-response battery.\n\n* **Workout Fuel:** Glycogen directly fuels your hard lifting sets. If your glycogen is low, your strength and ability to do work will drop off fast.\n* **Fiber:** Carbs are also the source of **Fiber**, which is essential for a healthy gut and keeping you full.\n\n**Strategy:** Focus on **Complex Carbohydrates** (oats, whole grains, root vegetables) for sustained energy, and time simple, fast-absorbing carbs (e.g., fruit, white rice) **after your workout** to quickly refuel and start the recovery process.'
-      },
-      {
-        title: 'Dietary Fats: Essential for Hormones and Health',
-        body: 'Fats are vital for your overall health, but they are very calorie-dense (9 calories per gram vs. 4 for protein/carbs), so they must be tracked carefully. Their key roles are:\n\n* **Hormone Balance:** Fats provide the raw material your body needs to create crucial hormones like **Testosterone and Estrogen**. Consuming too little fat can harm hormone production, affecting recovery, mood, and energy levels.\n* **Vitamin Absorption:** You need fat to properly absorb the fat-soluble vitamins: **A, D, E, and K**.\n\nFocus on sources of **healthy fats**—like those containing Omega-3s (found in fatty fish, nuts, seeds, avocados)—which help manage inflammation. Aim for roughly **20–30% of your total daily calories** from quality fat sources.'
-      },
-      {
-        title: 'Fiber, Satiety, and Gut Health',
-        body: 'Fiber—found in vegetables, fruits, and whole grains—is crucial for appetite control and long-term health. Aim for **25–35 grams per day**.\n\n* **The Fullness Factor:** Fiber adds volume to your food with almost no calories. It slows down digestion, which helps you feel full for longer and manage cravings.\n* **Gut Support:** Fiber acts as a **prebiotic**, which means it feeds the beneficial bacteria in your gut. A healthy gut is linked to better immunity, improved nutrient absorption, and even mood stability.\n\n* **Soluble Fiber:** (Oats, beans) Forms a gel that helps stabilize blood sugar.\n* **Insoluble Fiber:** (Vegetable skins, whole grains) Adds bulk to stool, promoting regular digestion.'
-      },
-      {
-        title: 'Hydration and Electrolytes: Preventing the Energy Crash',
-        body: 'Even mild dehydration dramatically impacts both physical and mental performance. Losing just **2% of your body weight in water** can reduce your strength, endurance, and concentration.\n\n**Electrolytes** (like Sodium, Potassium, Magnesium) are critical minerals that help your body transmit nerve signals, contract muscles, and maintain the right fluid balance in your cells. When you sweat a lot, you lose sodium, which can lead to cramping and fatigue.\n\n**Goal:** Drink at least **3.0 to 4.0 liters of water** daily, and consider adding an electrolyte source if your workouts are long (over 90 minutes) or you are training in the heat.'
-      },
-      {
-        title: 'Nutrient Timing: Fueling Around Workouts',
-        body: 'While you don\'t need to rush immediately after your last set, the 1–3 hours after training is still important for jump-starting the recovery process.\n\n**Post-Workout Goals (0–3 Hours):**\n* **Refuel:** Eat fast-digesting carbohydrates (e.g., a banana, rice, or juice) to quickly restock your muscle energy stores (**glycogen**).\n* **Repair:** Consume 25–30g of protein (like a whey shake or chicken breast) to signal your muscles to begin the repair and growth process.\n\nMaking this a priority stops the breakdown signals from hard training and ensures you recover faster for your next session.'
-      },
-      {
-        title: 'The 80/20 Rule: Flexibility and Sustainability',
-        body: 'The most effective diet is the one you can stick to forever. An overly restrictive plan is a fast track to burnout and failure. This is where the **80/20 Rule** comes in:\n\n* **80% of your intake** comes from nutrient-dense, whole, unprocessed foods that support your goals (lean proteins, vegetables, whole grains).\n* **20% of your intake** is reserved for flexibility—social eating, treats, or favorite foods that simply make life enjoyable.\n\nThis simple approach helps manage the stress that often comes from dieting. Constant, intense restriction can raise your stress hormone, **Cortisol**, which paradoxically can interfere with fat loss and make cravings worse. The 80/20 Rule removes this pressure.'
-      },
-      // --- NEW ARTICLES ADDED FOR NUTRITION (8 existing + 7 new = 15 total) ---
-      {
-        title: 'Understanding Micronutrients: Vitamins and Minerals',
-        body: 'While macronutrients (Protein, Carbs, Fat) provide energy, **Micronutrients** (vitamins and minerals) are essential catalysts for almost every bodily function—from energy production (B vitamins) to bone health (Vitamin D, Calcium) and immune function (Vitamin C, Zinc).\n\n**Focus on Food First:** The best way to get enough micros is through a diverse diet rich in colorful vegetables, fruits, and lean proteins. A multivitamin can be a good "insurance policy," but it is **not** a substitute for eating nutrient-dense foods.\n\n**Key Takeaway:** You can\'t be optimally healthy or perform at your best if your micronutrient baseline is low, even if your macros are perfect. The focus on high-volume, low-calorie vegetables ensures you meet these needs.'
-      },
-      {
-        title: 'Alcohol and Fitness: The Impact on Recovery and Metabolism',
-        body: 'Alcohol consumption impacts your fitness goals in several key ways:\n\n* **Empty Calories:** Alcohol provides calories (7 kcal per gram) with no nutritional value. These calories often replace healthier food choices.\n* **Metabolic Priority:** Your liver prioritizes metabolizing alcohol, which temporarily halts the processing of fat and slows down fat burning.\n* **Recovery Disruption:** Even moderate alcohol intake severely impacts **REM and deep sleep cycles**, which are crucial for muscle repair and hormone regulation (like Growth Hormone). Poor sleep directly leads to worse performance and recovery.\n\n**Strategy:** If you drink, plan it into your 80/20 flexibility, prioritize hydrating water in between drinks, and be prepared for slightly slower recovery the following day.'
-      },
-      {
-        title: 'Reading Food Labels: Decoding Key Information',
-        body: 'Food labels are your map to understanding what you are eating. The two most critical things to check are **Serving Size** and **Ingredients**.\n\n* **Serving Size:** Always check the serving size first. All the numbers (calories, fat, protein) are based on *that* size, which is often much smaller than what people actually eat in one sitting.\n* **Ingredients List:** Ingredients are listed in order of abundance. If the first few ingredients are sugar, refined oils, or highly processed items, the food is likely less nutritious.\n* **Fiber Check:** Compare the total Carbohydrates to the Fiber content. The higher the ratio of Fiber to Carbs, the better the quality of the carb source (e.g., 5g Fiber/25g Carbs is a good sign).'
-      },
-      {
-        title: 'Meal Prepping: Consistency, Control, and Time Savings',
-        body: 'Meal prepping is the practice of preparing full meals or components of meals in advance. This is the **number one strategy** for achieving nutritional consistency.\n\n**Key Benefits:**\n* **Prevents Impulse Buying:** Reduces the likelihood of grabbing unhealthy fast food when you are tired and hungry.\n* **Calorie Control:** You know exactly what you are eating and the exact portion sizes, making calorie tracking easy and accurate.\n* **Saves Money:** Cooking in bulk is cheaper than buying single meals or ingredients daily.\n\n**Simple Starter Prep:** Cook large batches of your lean protein (chicken, turkey) and complex carbs (rice, potatoes) on Sunday and Wednesday to cover the whole week.'
-      },
-      {
-        title: 'Understanding Key Supplements: The Essentials',
-        body: 'Most supplements are unnecessary, but a few are proven by science to be effective and worthwhile:\n\n* **Protein Powder (Whey/Casein):** A convenient way to hit your daily protein goal when whole food isn\'t practical. Not a replacement for food, but a **convenient tool**.\n* **Creatine Monohydrate:** The most effective supplement for increasing strength and muscle mass. It improves the body’s ability to generate explosive energy for lifting and speeds up recovery. It is safe, natural, and inexpensive.\n* **Fish Oil (Omega-3s):** Important for reducing inflammation, supporting brain health, and improving joint function. Essential if you don\'t eat fatty fish 2–3 times per week.'
-      },
-      {
-        title: 'Intermittent Fasting (IF) Basics',
-        body: 'Intermittent Fasting (IF) is an eating pattern that cycles between periods of eating and fasting (voluntarily abstaining from food). The most popular method is the **16/8 method** (fasting for 16 hours, eating during an 8-hour window).\n\n**Mechanism:** IF works primarily by restricting your **eating window**, which naturally makes it easier to stay in a **Calorie Deficit**.\n\n**Important Note:** IF is a tool for *timing* when you eat, but it does **not** override the need for *quality* food or **Calorie Balance**. If you overeat in the 8-hour window, you won\'t lose weight. It must be sustainable for your lifestyle.'
-      },
-      {
-        title: 'Increasing Vegetable and Fruit Volume',
-        body: 'Focusing on high-volume, low-calorie foods is a cheat code for weight management. Vegetables and fruits are packed with fiber and water, meaning they fill your stomach with few calories.\n\n**The Rule:** Fill at least **half of your plate** at every lunch and dinner with non-starchy vegetables (e.g., spinach, broccoli, peppers, zucchini).\n\nThis simple rule automatically increases your fiber and micronutrient intake, making your meals more satisfying and helping to reduce the overall calorie density of your plate, supporting your deficit goals effortlessly.'
-      },
-    ]
-  },
-  {
-    id: 'training',
-    title: 'Training Principles',
-    icon: 'Dumbbell',
-    color: ACCENT_COLOR,
-    content: [
-      {
-        title: 'Progressive Overload: Challenging Yourself Just a Little More',
-        body: 'The only way your body changes is if you constantly give it a reason to. **Progressive Overload** simply means finding a way to make your workouts slightly harder over time. If you do the exact same workout with the exact same weight every week, your body has no incentive to build muscle or get stronger.\n\nStrive to apply at least one of these challenges to your main exercises *each week*:\n\n* **Lift Heavier (Load):** Add a small amount of weight (like 2.5 lbs or 1kg) to your barbell or machine. This is one of the fastest ways to get stronger and build density.\n* **Do More Reps (Volume):** Complete one or two extra repetitions on a set.\n* **Do More Sets (Volume):** Add one entire working set to an exercise.\n* **Rest Less (Density):** Complete the same workout but actively cut your rest periods by 15-30 seconds. This improves your overall work capacity.\n* **Slow Down (Time Under Tension):** Deliberately take 3-4 seconds to lower the weight (the eccentric phase). This makes the muscle work harder and feel the tension.'
-      },
-      {
-        title: 'The Central Role of Recovery and Sleep',
-        body: 'The workout is the **damage stimulus**, but all the **muscle growth and fat loss occurs during recovery**. Ignoring recovery is the fastest way to feel burnt out and plateau.\n\nYour most powerful recovery tool is **Sleep**.\n* **Hormone Balance:** During deep sleep, your body naturally releases high levels of **Growth Hormone (GH)**—a powerful fat-burning and muscle-repairing hormone. Poor sleep, conversely, increases **Cortisol** (the stress hormone), which breaks down muscle and encourages fat storage.\n* **Nervous System Reset:** Heavy lifting fatigues your brain and **nervous system (CNS)**. Sleep is the only way to fully recover this system so you can lift heavy and stay focused next time. Aim for a non-negotiable **7–9 hours** of high-quality sleep nightly. '
-      },
-      {
-        title: 'Form Over Weight: Mastering Your Technique',
-        body: 'The weight on the bar is meaningless if you’re not safely and effectively working the target muscle. **Perfect form is always more important than a heavier weight.**\n\n**Key Techniques for Safety and Strength:**\n* **Bracing Your Core:** Before any heavy lift (Squat, Deadlift, Overhead Press), take a deep breath into your stomach (not your chest) and **brace your core tight, as if someone is about to punch you.** This pressure stabilizes your spine and prevents injury.\n* **Mind-Muscle Connection:** This is simply focusing your attention on the muscle you are trying to work. For example, during a Bicep Curl, concentrate on squeezing the bicep throughout the movement, especially as you lower the weight slowly. The goal is to feel the muscle, not just move the weight.'
-      },
-      {
-        title: 'Understanding Adaptation: Strength vs. Muscle Tone Rep Ranges',
-        body: 'You can adjust your rep ranges to focus on different goals:\n\n* **Building Strength (1–6 Reps):** Requires very heavy weights and long rest (3–5 minutes). The goal is teaching your body how to recruit all its muscle fibers for maximum force. Best for core lifts like squats and presses.\n* **Building Muscle Tone/Size (8–15 Reps):** The ideal zone for balancing challenge with volume. This is where most of your training should happen. The shorter rest periods (1–2 minutes) create the **pump\'** that drives muscle growth and endurance.\n* **Muscular Endurance (15+ Reps):** Requires light weights and short rest periods (30–60 seconds). Focuses on increasing the muscle’s ability to work for long periods (e.g., conditioning circuits).'
-      },
-      {
-        title: 'The Essential Warm-up and Cool-down Protocol',
-        body: 'Never skip your warm-up—it’s essential to prevent injury and get your mind ready. A good warm-up is specific to the workout you are about to do.\n\n**Warm-up (10–15 minutes):**\n* **General (5 minutes):** Light cardio (walking, cycling) to raise your heart rate and core temperature.\n* **Specific (5–10 minutes):** **Dynamic Stretching** (controlled movements like lunges, arm swings). This *activates* the muscles you will use. **Crucially, avoid holding stretches (static) before lifting**—save that for the cool-down.\n\n**Cool-down (5–10 minutes):** After training, use **Static Stretching** (holding stretches for 30–60 seconds) to restore muscle length and help your body relax. This is key for long-term flexibility.'
-      },
-      {
-        title: 'Training Intensity: The "Reps In Reserve" Rule',
-        body: 'You need to push hard to get results, but you should rarely train to absolute failure (where you physically can’t move the weight anymore). Training to failure is highly draining on your nervous system and increases injury risk.\n\n**The Rule:** For most of your main working sets, **always stop the set feeling like you could do 1 or 2 more perfect repetitions.**\n* This provides almost all the benefit of training hard without the massive fatigue cost of pushing to absolute failure. This is often called **RIR 1 or 2** (Reps In Reserve).'
-      },
-      {
-        title: 'Optimizing Rest Periods for Quality Sets',
-        body: 'The time you spend resting between sets is a key part of your program. Don\'t rest randomly.\n\n* **Long Rest (3–5 Minutes):** **Mandatory** for your heaviest lifts (1–6 reps). This gives your body enough time to fully replenish the quick-energy system that fuels maximal strength, ensuring your next heavy set is just as strong as the last.\n* **Moderate Rest (90–120 Seconds):** Used for muscle-building work (8–15 reps). This partial rest keeps a level of tension and \'pump\' in the muscle, which is great for growth.\n* **Short Rest (30–60 Seconds):** Used for conditioning or very high-rep work. This intentionally keeps you breathless, improving your muscular endurance.'
-      },
-      {
-        title: 'The Power of Compound Lifts (Best Bang for Your Buck)',
-        body: 'Compound exercises are movements that work **multiple major muscle groups and multiple joints** at the same time (e.g., Squat, Deadlift, Bench Press, Push-ups).\n\n**Why They Are Essential:**\n* **Maximum Efficiency:** They are the fastest way to build full-body strength and muscle tone because they engage the most total muscle mass at once.\n* **Functional Strength:** They build coordinated, real-world strength and stability that helps you in daily life (e.g., lifting groceries, moving furniture).\n* **Hormonal Boost:** Because they use the largest muscles (legs, back, chest), they trigger a natural and superior release of the anabolic (building) hormones needed for recovery. '
-      },
-      {
-        title: 'The Basics of Deloading: Scheduled Rest',
-        body: 'Your body needs a break, even if you feel fine. **Periodization** means cycling periods of hard work with planned recovery to avoid burnout and plateaus. This is often done with a **Deload Week**.\n\nEvery 4–8 weeks of hard training, plan a week where you reduce the weight and the total number of sets you do by 40–60%. This is *not* a rest week—it’s an active recovery week designed to dissipate hidden fatigue in your **nervous system**. You will feel rested, stronger, and more motivated when you start your next training block.'
-      },
-      {
-        title: 'Cardio Integration: HIIT, LISS, and Fat Burning',
-        body: 'Cardio is vital for health, heart conditioning, and burning extra calories. The type you choose matters:\n\n* **LISS (Low-Intensity Steady State):** Working at a comfortable pace (you can hold a conversation) for 30–60 minutes (e.g., fast walking, light cycling). This is great for recovery and primarily uses fat for fuel (the **Fat Burning Zone**). This should be your go-to cardio.\n* **HIIT (High-Intensity Interval Training):** Short bursts of maximal effort followed by short rest periods. HIIT significantly improves your **anaerobic fitness**. It creates a powerful **afterburn effect** (your metabolism stays high for hours). **Caution:** HIIT is mentally and physically draining; limit it to 1–2 times per week on non-lifting days to protect your recovery.'
-      },
-      {
-        title: 'Mobility and Range of Motion (ROM)',
-        body: 'Mobility is your ability to actively move a joint through its full **Range of Motion (ROM)** with strength and control. Mobility is key to injury prevention and getting the most out of your lifts.\n\nPoor mobility forces your body to compensate, which often stresses vulnerable areas (e.g., tight hips/ankles often cause back pain during squats).\n\nUse your warm-up time to do specific **mobility drills** (band stretches, foam rolling) that target any tight areas. If you can’t safely hit the full ROM for an exercise (like a deep squat), modify the movement until your mobility improves.'
-      },
-      {
-        title: 'Listening to Your Body: Pain vs. Soreness',
-        body: 'A crucial skill is knowing the difference between normal soreness and dangerous pain. **Pain is a stop sign; Soreness is a sign of adaptation.**\n\n* **Soreness (DOMS):** A general, dull ache localized in the **middle of the muscle** that peaks 24–48 hours *after* a workout. It feels stiff but usually improves with light movement.\n* **Joint Pain:** Any sharp, shooting, pinching, grinding, or highly localized discomfort that occurs **during the exercise** or at the **joint or tendon insertion points** (e.g., knee cap, low back, shoulder). **If you feel joint pain, stop the exercise immediately.** Drop the weight, adjust the technique, or replace the exercise entirely. Never "train through" joint or tendon pain.'
-      },
-      // --- NEW ARTICLES ADDED FOR TRAINING (12 existing + 4 new = 16 total) ---
-      {
-        title: 'Tempo Training: Controlling the Speed of Movement',
-        body: 'Tempo refers to the speed at which you execute the different phases of a lift, usually expressed in a four-digit code (e.g., 3-1-1-0).\n\n* **First Digit (3):** The time (in seconds) taken to lower the weight (**Eccentric** phase). Using a slow tempo here is fantastic for muscle growth (hypertrophy).\n* **Second Digit (1):** The time paused at the stretched position (e.g., bottom of a squat).\n* **Third Digit (1):** The time taken to lift the weight (**Concentric** phase).\n* **Fourth Digit (0):** The time paused at the top (contracted) position.\n\n**Benefit:** Tempo training increases **Time Under Tension (TUT)**, which is a powerful driver for muscle growth, and forces you to use pristine form by removing momentum.'
-      },
-      {
-        title: 'Accessory Lifts: Building a Complete Physique',
-        body: 'Accessory lifts (or isolation movements) support your main compound lifts by targeting specific, smaller muscle groups or weak points.\n\n**Example:** Face pulls (accessory) strengthen the rear shoulders and rotator cuffs, which improves posture and shoulder stability for the overhead press (compound lift).\n\n**Strategy:** Focus on using accessory work (e.g., bicep curls, lateral raises, tricep extensions) with moderate rest and a higher rep range (10–15 reps) to accumulate muscle volume, which is critical for muscle size and tone.'
-      },
-      {
-        title: 'Periodization Basics: Planning Your Training Year',
-        body: 'Periodization is the systematic process of cycling your training stress and intensity over time. This prevents plateaus, reduces the risk of injury, and ensures peak performance when you need it.\n\n* **Macrocycle (Year):** The entire training plan (e.g., 12 months).\n* **Mesocycle (Month/Block):** A specific 4-6 week block with a single focus (e.g., a "Strength Block" followed by a "Hypertrophy Block").\n* **Microcycle (Week):** Your weekly routine and workout structure.\n\n**Key:** You must intentionally change the **variables** (Reps, Sets, Weight, Rest) every few weeks—otherwise, your body will stop adapting to the same stimulus.'
-      },
-      {
-        title: 'Supersets and Drop Sets: Increasing Intensity',
-        body: 'These are advanced techniques used to increase the **density** and intensity of your workout, pushing past normal limits to trigger new adaptation:\n\n* **Superset:** Performing two exercises back-to-back with minimal rest in between (e.g., a set of squats immediately followed by a set of lunges). Use supersets with antagonistic muscles (e.g., chest and back) to maintain strength while resting the target area.\n* **Drop Set:** Performing a set to near failure, immediately reducing the weight by 20-40%, and then continuing the set with no rest until failure again. This is extremely effective for muscle growth but highly fatiguing on the muscle.'
-      },
-      {
-        title: 'Identifying and Avoiding Plateaus',
-        body: 'A plateau is a period where your progress in strength, muscle size, or fat loss stalls for several weeks. It\'s a sign that your body has adapted to your current stimulus.\n\n**Common Causes:** Insufficient **Progressive Overload**, inadequate **Recovery (Sleep)**, or a sudden drop in **Calorie Deficit** (if cutting).\n\n**Solutions:**\n* **Force a Change:** Implement one of the Progressive Overload methods (e.g., add more weight or volume).\n* **Deload:** Take a planned deload week to dissipate systemic fatigue.\n* **Change the Stimulus:** Switch your primary exercises or change your rep scheme drastically for a 4-week block.'
-      },
-    ]
-  },
-  {
-    id: 'mindset',
-    title: 'Habits & Mindset',
-    icon: 'Zap',
-    color: 'text-gray-700',
-    content: [
-      {
-        title: 'SMART Goals: Making Your Wishes Actionable',
-        body: 'Wishing for a goal is not enough—you need a clear roadmap. Goals must be **SMART** to provide clarity and keep you on track:\n\n* **S**pecific: "Lose 10 lbs" vs. "Feel better."\n* **M**easurable: Track progress with numbers (weight, reps, body measurements).\n* **A**chievable: Challenging but realistic for your current life.\n* **R**elevant: Aligns with your deep reasons for wanting to change.\n* **T**ime-bound: Set a specific deadline.\n\n**Focus on the Daily Process:** While the outcome (e.g., "Lose 20 lbs") is the destination, your daily focus should be on the **process** (e.g., "Hit my protein goal today," or "Get my 8,000 steps in"). You control the process; the outcome is the reward for following it.'
-      },
-      {
-        title: 'Identity-Based Habits: Who You Are Becoming',
-        body: 'Sustainable change happens when you stop trying to just change your results and instead focus on changing **who you believe you are (your Identity)**. This is a subtle but powerful psychological shift.\n\n* **Old Focus (Outcome):** "I want to lose weight."\n* **New Focus (Identity):** "**I am a healthy person who prioritizes movement and good fuel.**"\n\nWhen faced with a difficult choice (hitting snooze vs. working out), ask yourself: *"What would the person I want to become do right now?"* This makes good habits a reflection of your personality, not just a temporary chore.'
-      },
-      {
-        title: 'Setting Up Your Success Zone (Environmental Design)',
-        body: 'Success is less about willpower and more about **making the healthy choice the easiest choice** . You need to design your environment to work for you, not against you.\n\n* **Make it Obvious & Easy:** Lay your gym clothes out next to your bed. Put your protein powder and shaker cup where you will trip over them. Pre-portion snacks so they are ready to grab.\n* **Make it Difficult:** Store tempting foods (junk food, candy) in a hard-to-reach spot, in an opaque container, or, ideally, don’t bring them home at all. Adding just a few seconds of effort to a bad habit can be enough to stop it.'
-      },
-      {
-        title: 'Stress and Fat Loss: The Cortisol Connection',
-        body: 'High levels of psychological stress actively disrupt your fat loss efforts. When you are stressed, your body releases high amounts of the hormone **Cortisol**.\n\nChronic (long-term) high Cortisol levels do two things that harm weight loss:\n* **Stores Fat:** It encourages the storage of fat, particularly around the abdomen/belly area.\n* **Increases Cravings:** It messes up your hunger hormones, causing persistent cravings for sugary and high-fat "comfort" foods.\n\n**The takeaway:** Stress management (meditation, walking, good sleep) is not optional—it\'s a fundamental tool for metabolic success.'
-      },
-      {
-        title: 'Reframing Setbacks: The Growth Mindset',
-        body: 'Everyone slips up. The key is how you respond. Adopt a **Growth Mindset**:\n\n* **Instead of a Fixed Mindset:** "I missed two workouts this week, so I\'m a failure and should quit."\n* **Use a Growth Mindset:** "I missed two workouts, but I learned that my Tuesday/Thursday schedule is too busy. This is **feedback** telling me I need to adjust my plan for next week."\n\nTreat setbacks not as personal failings, but as **data points** that tell you your strategy needs adjusting. Your ability to learn and adjust is the measure of your success, not perfection.'
-      },
-      {
-        title: 'Non-Scale Victories (NSVs): Tracking Real Progress',
-        body: 'The scale is often misleading due to daily fluctuations in water, sodium, and carb intake. Don\'t let a fluctuating number hijack your mood or motivation. \n\nFocus on celebrating **Non-Scale Victories (NSVs)**, which are better signs of real body change:\n* **Performance:** Hitting a new personal best on a lift, walking farther than last month, or feeling stronger in daily tasks.\n* **Body Composition:** Clothes fitting loosely, noticing more muscle shape, better posture.\n* **Health & Mood:** Consistent high energy, sleeping through the night, having better focus at work.\n\nThese victories confirm that your new **Identity** is taking hold.'
-      },
-      {
-        title: 'Habit Stacking: Linking New Habits to Old Ones',
-        body: 'Making a new habit stick is all about making it automatic. **Habit Stacking** links a new desired action to an old, established action to use the existing momentum.\n\n**The Simple Formula:** *After [Current Habit], I will [New Habit].*\n\n* **Example:** "After I pour my morning coffee (Current Habit), I will immediately take my vitamins and supplements (New Habit)."\n* **Example:** "After I finish eating dinner (Current Habit), I will immediately load the dishwasher and pack my gym bag for the morning (New Habit)."\n\nThis bypasses the need for willpower because the trigger is already automatic.'
-      },
-      {
-        title: 'Finding Your Deep "Why" (Intrinsic Motivation)',
-        body: 'The social environment—parties, dinners, or casual meetings—is often the biggest hurdle to maintaining habits. Dealing with pressure to eat or drink outside your plan is less about what you *say* and more about your internal **confidence** in your choices. \n\n* **Reframing Your Choices:** Your healthy habits aren\'t a punishment; they are a **priority**. View your food choices as fuel that supports your performance, energy, and mental clarity. When you internalize this, your decisions feel less like "dieting" and more like **self-care**.\n* **Boundary Confidence:** The key to a non-defensive response is brevity and finality. You don\'t owe anyone a long explanation for your decisions. A simple, confident "No, thank you, I\'m good" or "I\'m going to pass on that one today" is usually enough. People respect clear boundaries, and being secure in your "why" makes the interaction quick and easy.\n* **The Compromise Strategy (80/20):** If you want to participate without completely derailing your goals, practice moderation. Focus on enjoying the social context and connection. If you choose to have a treat, decide on the amount beforehand (e.g., a few bites of dessert, one small appetizer). This maintains flexibility and prevents the "all-or-nothing" guilt cycle.\n* **Identity Reinforcement:** Every time you successfully navigate social pressure, you reinforce your new **Identity** as a person who is committed to their health. This builds confidence and makes the next social situation easier.'
-      },
-      {
-        title: 'Mastering Sleep Hygiene for Recovery',
-        body: 'Sleep is the most effective form of recovery you have. It\'s where your body repairs muscle and balances all the hormones that control hunger, stress, and fat storage. Poor sleep is a massive metabolic disruptor.\n\n**Actionable Sleep Hygiene:**\n* **The 1-Hour Wind Down:** Stop all work and put away phones/tablets/TV (blue light sources) at least 60 minutes before bed. Blue light blocks the sleep hormone **Melatonin**.\n* **The Cool Rule:** Keep your bedroom cool (ideally 60–67°F or 15–19°C) as your body naturally lowers its temperature to fall asleep.\n* **Consistency:** Go to bed and wake up at roughly the same time every day, even on weekends, to set your body\'s internal clock (**Circadian Rhythm**).'
-      },
-      {
-        title: 'Dealing with Social Pressure: Prioritizing Your Confidence',
-        body: 'The social environment—parties, dinners, or casual meetings—is often the biggest hurdle to maintaining habits. Dealing with pressure to eat or drink outside your plan is less about what you *say* and more about your internal **confidence** in your choices.\n\n* **Reframing Your Choices:** Your healthy habits aren\'t a punishment; they are a **priority**. View your food choices as fuel that supports your performance, energy, and mental clarity. When you internalize this, your decisions feel less like "dieting" and more like **self-care**.\n* **Boundary Confidence:** The key to a non-defensive response is brevity and finality. You don\'t owe anyone a long explanation for your decisions. A simple, confident "No, thank you, I\'m good" or "I\'m going to pass on that one today" is usually enough. People respect clear boundaries, and being secure in your "why" makes the interaction quick and easy.\n* **The Compromise Strategy (80/20):** If you want to participate without completely derailing your goals, practice moderation. Focus on enjoying the social context and connection. If you choose to have a treat, decide on the amount beforehand (e.g., a few bites of dessert, one small appetizer). This maintains flexibility and prevents the "all-or-nothing" guilt cycle.\n* **Identity Reinforcement:** Every time you successfully navigate social pressure, you reinforce your new **Identity** as a person who is committed to their health. This builds confidence and makes the next social situation easier.'
-      },
-      // --- NEW ARTICLES ADDED FOR MINDSET (10 existing + 6 new = 16 total) ---
-      {
-        title: 'The All-or-Nothing Mentality Trap',
-        body: 'The **"All-or-Nothing"** mindset is one of the biggest reasons people quit. It says, "If I can\'t do it perfectly, I might as well not do it at all." This leads to catastrophic thinking after a small slip-up (e.g., eating one unplanned dessert means the whole week is ruined).\n\n**Solution:** Embrace the **"Good Enough"** mindset. If you miss a workout, go tomorrow. If you overate at dinner, just track it and eat clean for the next meal. The goal is consistency, not perfection. One bad meal or missed workout does not derail months of progress; only quitting does.'
-      },
-      {
-        title: 'Self-Monitoring: The Power of Tracking Data',
-        body: 'What gets measured gets managed. **Self-Monitoring** is the act of collecting data on your behavior (e.g., tracking food, steps, sleep, or lift numbers). This creates immediate accountability and provides crucial **feedback**.\n\n**Key Metrics to Track:**\n* **Food Intake:** (A few weeks to establish awareness)\n* **Steps/NEAT:** (Daily minimum)\n* **Lift Performance:** (Weekly PRs or volume increases)\n* **Sleep:** (Consistency and duration)\n\nTracking removes guesswork. When progress stalls, you can look at the data to see *exactly* where you need to apply Progressive Overload or adjust your nutrition.'
-      },
-      {
-        title: 'The 5-Minute Rule for Low Motivation',
-        body: 'Motivation is unreliable. When you lack the motivation to start a difficult task (like going to the gym or preparing a healthy meal), use the **5-Minute Rule**:\n\n**Commit to doing the task for only five minutes.**\n\nIf you still hate it after five minutes, you have permission to stop. What usually happens is that the **momentum** you build in those first five minutes overcomes the initial inertia, and you finish the task. Getting started is always the hardest part; this rule makes getting started easy.'
-      },
-      {
-        title: 'Overcoming Body Image Challenges',
-        body: 'It is easy to fall into the trap of constantly comparing your body to highlight reels on social media. Remember that fitness is a **personal journey** focused on health, function, and sustained energy, not just aesthetics.\n\n**Focus on Function:** Shift your focus from *how your body looks* to *what your body can do*. Celebrate new personal bests, greater endurance, and better mobility. These **performance metrics** are objective and reinforce the feeling of being strong and capable, which is more motivating than temporary appearance goals.'
-      },
-      {
-        title: 'Accountability and Support Systems',
-        body: 'Trying to do it all alone is one of the hardest ways to achieve a goal. An effective **Accountability System** provides external motivation and social pressure to follow through.\n\n* **Your Coach:** This is your primary accountability partner, providing structure and feedback.\n* **A Training Partner/Friend:** Having a friend to meet at the gym or share recipes with makes the process more fun and much harder to skip.\n* **Public Commitment:** Telling a few trusted people your goals increases your internal drive to follow through because you don\'t want to let them (or yourself) down.'
-      },
-      {
-        title: 'Mindfulness in Eating and Training',
-        body: 'Mindfulness means paying attention to the present moment without judgment. Applying this to fitness dramatically improves results:\n\n* **Mindful Eating:** Slow down, put away distractions (phone/TV), and focus on the taste, texture, and physical feeling of fullness (**Satiety Signals**). This prevents overeating and improves digestion.\n* **Mindful Training (Mind-Muscle Connection):** Focus intensely on the muscle working during your set, rather than just moving the weight. This maximizes the muscle damage signal, which is critical for muscle growth, and prevents your joints from compensating for the lack of muscle tension.'
-      },
-    ]
-  },
-];
+      return parts.map((part, index) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          // It's a bolded segment: remove the asterisks and wrap in <strong>
+          const boldText = part.slice(2, -2);
+          // Use Tailwind class 'font-bold text-gray-900' for rendering
+          return <strong key={index} className="font-bold text-gray-900">{boldText}</strong>;
+        }
+        // It's a standard text segment
+        return part;
+      });
+    };
 
-// --- UTILITY COMPONENTS ---
 
-const AccordionItem = ({ item, isActive, toggleActive }) => (
-  <div className="border-b border-gray-300">
-    <button
-      className="flex justify-between items-center w-full p-4 text-left font-semibold text-gray-800 hover:bg-gray-100 transition-colors"
-      onClick={toggleActive}
-      aria-expanded={isActive}
-      aria-controls={`content-${item.title.replace(/\s/g, '-')}`}
-    >
-      <span>{item.title}</span>
-      <Icon name="ChevronDown" className={`w-5 h-5 transition-transform ${isActive ? 'transform rotate-180' : ''}`} />
-    </button>
-    <div
-      id={`content-${item.title.replace(/\s/g, '-')}`}
-      className={`overflow-hidden transition-all duration-300 ease-in-out ${isActive ? 'max-h-[2200px] opacity-100 p-4 pt-0' : 'max-h-0 opacity-0 p-0'}`}
-    >
-      {/* RENDERED CONTENT: Now uses the robust renderMarkdown, removing whitespace-pre-wrap */}
-      <div className="text-sm font-sans bg-gray-50 p-3 rounded-lg border border-gray-200 space-y-1">
-        {renderMarkdown(item.body ? item.body.trim() : 'Content loading error or missing.')}
+    // --- CORE KNOWLEDGE DATA (UNCHANGED) ---
+
+    // MONOCHROME THEME VARIABLES
+    const ACCENT_COLOR = 'text-black';
+    const ACCENT_CLASS = 'bg-black hover:bg-gray-800';
+
+    const knowledgeSections = [
+      {
+        id: 'home',
+        title: 'Home / Performance Overview',
+        icon: 'BookOpen', // Sidebar icon remains BookOpen
+        color: ACCENT_COLOR,
+        content: null, // Home uses a dedicated component
+      },
+      {
+        id: 'ai-brain',
+        title: 'Gymini: AI Coaching Brain', // UPDATED TITLE HERE
+        icon: 'Brain',
+        color: ACCENT_COLOR, // UPDATED COLOR FOR PROMINENCE
+        content: null, // AI section uses a dedicated component
+      },
+      {
+        id: 'nutrition',
+        title: 'Nutrition & Fueling',
+        icon: 'Apple',
+        color: 'text-gray-700',
+        content: [
+          {
+            title: 'Calorie Balance: The Simple Math of Weight Change',
+            body: 'Whether you gain, lose, or maintain weight comes down to one fundamental principle: **Energy Balance** (Calories In vs. Calories Out). Everything else is secondary.\n\nThe "Calories Out" side is called your **Total Daily Energy Expenditure (TDEE)**. It’s the total energy your body burns every day, which is made up of four main factors:\n\n1. **Resting Metabolism (BMR):** Energy used for basic survival (breathing, circulating blood). This is the biggest factor.\n2. **Digesting Food (TEF):** Energy used to process the food you eat. **Protein requires the most energy to digest,** which is one reason it’s great for weight loss.\n3. **Daily Movement (NEAT):** Energy from non-exercise activity like walking, standing, and fidgeting. This is highly variable and often the biggest difference between two people\'s daily burn.\n4. **Workouts (EAT):** Calories burned during structured exercise.\n\nTo achieve **Fat Loss**, you need a consistent **Calorie Deficit** (eating slightly fewer calories than your TDEE). To achieve **Muscle Gain**, you need a small **Calorie Surplus** (eating slightly more than your TDEE). '
+          },
+          {
+            title: 'Protein: The Building Block for Muscle and Fullness',
+            body: 'Protein is the most important nutrient for changing your body shape. It provides the **amino acids** (tiny building blocks) your body needs to repair and build muscle tissue after training. It also has the biggest impact on **satiety** (feeling full).\n\n**The \'Per Meal\' Rule:** To maximize muscle repair and growth, you need to hit a certain amount of protein in a single sitting to send a strong signal to your body. Aim for **25–30 grams of high-quality protein** at most meals.\n\n**Daily Goal:** Most people do well aiming for **0.8 to 1 gram of protein per pound of your GOAL body weight**. Spreading this intake across **4–5 meals/snacks** throughout the day is the best strategy to keep your body in a repair and growth state, and most importantly, keep you feeling satisfied.'
+          },
+          {
+            title: 'Carbohydrates: Your Fast-Burning Energy Fuel',
+            body: 'Carbohydrates are your body’s preferred source of fast energy, especially for intense activities like strength training or sprinting. Carbs are stored in your muscles and liver as **Glycogen**, which is like a rapid-response battery.\n\n1. **Workout Fuel:** Glycogen directly fuels your hard lifting sets. If your glycogen is low, your strength and ability to do work will drop off fast.\n2. **Fiber:** Carbs are also the source of **Fiber**, which is essential for a healthy gut and keeping you full.\n\n**Strategy:** Focus on **Complex Carbohydrates** (oats, whole grains, root vegetables) for sustained energy, and time simple, fast-absorbing carbs (e.g., fruit, white rice) **after your workout** to quickly refuel and start the recovery process.'
+          },
+          {
+            title: 'Dietary Fats: Essential for Hormones and Health',
+            body: 'Fats are vital for your overall health, but they are very calorie-dense (9 calories per gram vs. 4 for protein/carbs), so they must be tracked carefully. Their key roles are:\n\n1. **Hormone Balance:** Fats provide the raw material your body needs to create crucial hormones like **Testosterone and Estrogen**. Consuming too little fat can harm hormone production, affecting recovery, mood, and energy levels.\n2. **Vitamin Absorption:** You need fat to properly absorb the fat-soluble vitamins: **A, D, E, and K**.\n\nFocus on sources of **healthy fats**—like those containing Omega-3s (found in fatty fish, nuts, seeds, avocados)—which help manage inflammation. Aim for roughly **20–30% of your total daily calories** from quality fat sources.'
+          },
+          {
+            title: 'Fiber, Satiety, and Gut Health',
+            body: 'Fiber—found in vegetables, fruits, and whole grains—is crucial for appetite control and long-term health. Aim for **25–35 grams per day**.\n\n1. **The Fullness Factor:** Fiber adds volume to your food with almost no calories. It slows down digestion, which helps you feel full for longer and manage cravings.\n2. **Gut Support:** Fiber acts as a **prebiotic**, which means it feeds the beneficial bacteria in your gut. A healthy gut is linked to better immunity, improved nutrient absorption, and even mood stability.\n\n* **Soluble Fiber:** (Oats, beans) Forms a gel that helps stabilize blood sugar.\n* **Insoluble Fiber:** (Vegetable skins, whole grains) Adds bulk to stool, promoting regular digestion.'
+          },
+          {
+            title: 'Hydration and Electrolytes: Preventing the Energy Crash',
+            body: 'Even mild dehydration dramatically impacts both physical and mental performance. Losing just **2% of your body weight in water** can reduce your strength, endurance, and concentration.\n\n**Electrolytes** (like Sodium, Potassium, Magnesium) are critical minerals that help your body transmit nerve signals, contract muscles, and maintain the right fluid balance in your cells. When you sweat a lot, you lose sodium, which can lead to cramping and fatigue.\n\n**Goal:** Drink at least **3.0 to 4.0 liters of water** daily, and consider adding an electrolyte source if your workouts are long (over 90 minutes) or you are training in the heat.'
+          },
+          {
+            title: 'Nutrient Timing: Fueling Around Workouts',
+            body: 'While you don\'t need to rush immediately after your last set, the 1–3 hours after training is still important for jump-starting the recovery process.\n\n**Post-Workout Goals (0–3 Hours):**\n1. **Refuel:** Eat fast-digesting carbohydrates (e.g., a banana, rice, or juice) to quickly restock your muscle energy stores (**glycogen**).\n2. **Repair:** Consume 25–30g of protein (like a whey shake or chicken breast) to signal your muscles to begin the repair and growth process.\n\nMaking this a priority stops the breakdown signals from hard training and ensures you recover faster for your next session.'
+          },
+          {
+            title: 'The 80/20 Rule: Flexibility and Sustainability',
+            body: 'The most effective diet is the one you can stick to forever. An overly restrictive plan is a fast track to burnout and failure. This is where the **80/20 Rule** comes in:\n\n* **80% of your intake** comes from nutrient-dense, whole, unprocessed foods that support your goals (lean proteins, vegetables, whole grains).\n* **20% of your intake** is reserved for flexibility—social eating, treats, or favorite foods that simply make life enjoyable.\n\nThis simple approach helps manage the stress that often comes from dieting. Constant, intense restriction can raise your stress hormone, **Cortisol**, which paradoxically can interfere with fat loss and make cravings worse. The 80/20 Rule removes this pressure.'
+          },
+          // --- NEW ARTICLES ADDED FOR NUTRITION (8 existing + 7 new = 15 total) ---
+          {
+            title: 'Understanding Micronutrients: Vitamins and Minerals',
+            body: 'While macronutrients (Protein, Carbs, Fat) provide energy, **Micronutrients** (vitamins and minerals) are essential catalysts for almost every bodily function—from energy production (B vitamins) to bone health (Vitamin D, Calcium) and immune function (Vitamin C, Zinc).\n\n**Focus on Food First:** The best way to get enough micros is through a diverse diet rich in colorful vegetables, fruits, and lean proteins. A multivitamin can be a good "insurance policy," but it is **not** a substitute for eating nutrient-dense foods.\n\n**Key Takeaway:** You can\'t be optimally healthy or perform at your best if your micronutrient baseline is low, even if your macros are perfect. The focus on high-volume, low-calorie vegetables ensures you meet these needs.'
+          },
+          {
+            title: 'Alcohol and Fitness: The Impact on Recovery and Metabolism',
+            body: 'Alcohol consumption impacts your fitness goals in several key ways:\n\n1. **Empty Calories:** Alcohol provides calories (7 kcal per gram) with no nutritional value. These calories often replace healthier food choices.\n2. **Metabolic Priority:** Your liver prioritizes metabolizing alcohol, which temporarily halts the processing of fat and slows down fat burning.\n3. **Recovery Disruption:** Even moderate alcohol intake severely impacts **REM and deep sleep cycles**, which are crucial for muscle repair and hormone regulation (like Growth Hormone). Poor sleep directly leads to worse performance and recovery.\n\n**Strategy:** If you drink, plan it into your 80/20 flexibility, prioritize hydrating water in between drinks, and be prepared for slightly slower recovery the following day.'
+          },
+          {
+            title: 'Reading Food Labels: Decoding Key Information',
+            body: 'Food labels are your map to understanding what you are eating. The two most critical things to check are **Serving Size** and **Ingredients**.\n\n1. **Serving Size:** Always check the serving size first. All the numbers (calories, fat, protein) are based on *that* size, which is often much smaller than what people actually eat in one sitting.\n2. **Ingredients List:** Ingredients are listed in order of abundance. If the first few ingredients are sugar, refined oils, or highly processed items, the food is likely less nutritious.\n3. **Fiber Check:** Compare the total Carbohydrates to the Fiber content. The higher the ratio of Fiber to Carbs, the better the quality of the carb source (e.g., 5g Fiber/25g Carbs is a good sign).'
+          },
+          {
+            title: 'Meal Prepping: Consistency, Control, and Time Savings',
+            body: 'Meal prepping is the practice of preparing full meals or components of meals in advance. This is the **number one strategy** for achieving nutritional consistency.\n\n**Key Benefits:**\n* **Prevents Impulse Buying:** Reduces the likelihood of grabbing unhealthy fast food when you are tired and hungry.\n* **Calorie Control:** You know exactly what you are eating and the exact portion sizes, making calorie tracking easy and accurate.\n* **Saves Money:** Cooking in bulk is cheaper than buying single meals or ingredients daily.\n\n**Simple Starter Prep:** Cook large batches of your lean protein (chicken, turkey) and complex carbs (rice, potatoes) on Sunday and Wednesday to cover the whole week.'
+          },
+          {
+            title: 'Understanding Key Supplements: The Essentials',
+            body: 'Most supplements are unnecessary, but a few are proven by science to be effective and worthwhile:\n\n1. **Protein Powder (Whey/Casein):** A convenient way to hit your daily protein goal when whole food isn\'t practical. Not a replacement for food, but a **convenient tool**.\n2. **Creatine Monohydrate:** The most effective supplement for increasing strength and muscle mass. It improves the body’s ability to generate explosive energy for lifting and speeds up recovery. It is safe, natural, and inexpensive.\n3. **Fish Oil (Omega-3s):** Important for reducing inflammation, supporting brain health, and improving joint function. Essential if you don\'t eat fatty fish 2–3 times per week.'
+          },
+          {
+            title: 'Intermittent Fasting (IF) Basics',
+            body: 'Intermittent Fasting (IF) is an eating pattern that cycles between periods of eating and fasting (voluntarily abstaining from food). The most popular method is the **16/8 method** (fasting for 16 hours, eating during an 8-hour window).\n\n**Mechanism:** IF works primarily by restricting your **eating window**, which naturally makes it easier to stay in a **Calorie Deficit**.\n\n**Important Note:** IF is a tool for *timing* when you eat, but it does **not** override the need for *quality* food or **Calorie Balance**. If you overeat in the 8-hour window, you won\'t lose weight. It must be sustainable for your lifestyle.'
+          },
+          {
+            title: 'Increasing Vegetable and Fruit Volume',
+            body: 'Focusing on high-volume, low-calorie foods is a cheat code for weight management. Vegetables and fruits are packed with fiber and water, meaning they fill your stomach with few calories.\n\n**The Rule:** Fill at least **half of your plate** at every lunch and dinner with non-starchy vegetables (e.g., spinach, broccoli, peppers, zucchini).\n\nThis simple rule automatically increases your fiber and micronutrient intake, making your meals more satisfying and helping to reduce the overall calorie density of your plate, supporting your deficit goals effortlessly.'
+          },
+        ]
+      },
+      {
+        id: 'training',
+        title: 'Training Principles',
+        icon: 'Dumbbell',
+        color: ACCENT_COLOR,
+        content: [
+          {
+            title: 'Progressive Overload: Challenging Yourself Just a Little More',
+            body: 'The only way your body changes is if you constantly give it a reason to. **Progressive Overload** simply means finding a way to make your workouts slightly harder over time. If you do the exact same workout with the exact same weight every week, your body has no incentive to build muscle or get stronger.\n\nStrive to apply at least one of these challenges to your main exercises *each week*:\n\n* **Lift Heavier (Load):** Add a small amount of weight (like 2.5 lbs or 1kg) to your barbell or machine. This is one of the fastest ways to get stronger and build density.\n* **Do More Reps (Volume):** Complete one or two extra repetitions on a set.\n* **Do More Sets (Volume):** Add one entire working set to an exercise.\n* **Rest Less (Density):** Complete the same workout but actively cut your rest periods by 15-30 seconds. This improves your overall work capacity.\n* **Slow Down (Time Under Tension):** Deliberately take 3-4 seconds to lower the weight (the eccentric phase). This makes the muscle work harder and feel the tension.'
+          },
+          {
+            title: 'The Central Role of Recovery and Sleep',
+            body: 'The workout is the **damage stimulus**, but all the **muscle growth and fat loss occurs during recovery**. Ignoring recovery is the fastest way to feel burnt out and plateau.\n\nYour most powerful recovery tool is **Sleep**.\n* **Hormone Balance:** During deep sleep, your body naturally releases high levels of **Growth Hormone (GH)**—a powerful fat-burning and muscle-repairing hormone. Poor sleep, conversely, increases **Cortisol** (the stress hormone), which breaks down muscle and encourages fat storage.\n* **Nervous System Reset:** Heavy lifting fatigues your brain and **nervous system (CNS)**. Sleep is the only way to fully recover this system so you can lift heavy and stay focused next time. Aim for a non-negotiable **7–9 hours** of high-quality sleep nightly. '
+          },
+          {
+            title: 'Form Over Weight: Mastering Your Technique',
+            body: 'The weight on the bar is meaningless if you’re not safely and effectively working the target muscle. **Perfect form is always more important than a heavier weight.**\n\n**Key Techniques for Safety and Strength:**\n* **Bracing Your Core:** Before any heavy lift (Squat, Deadlift, Overhead Press), take a deep breath into your stomach (not your chest) and **brace your core tight, as if someone is about to punch you.** This pressure stabilizes your spine and prevents injury.\n* **Mind-Muscle Connection:** This is simply focusing your attention on the muscle you are trying to work. For example, during a Bicep Curl, concentrate on squeezing the bicep throughout the movement, especially as you lower the weight slowly. The goal is to feel the muscle, not just move the weight.'
+          },
+          {
+            title: 'Understanding Adaptation: Strength vs. Muscle Tone Rep Ranges',
+            body: 'You can adjust your rep ranges to focus on different goals:\n\n* **Building Strength (1–6 Reps):** Requires very heavy weights and long rest (3–5 minutes). The goal is teaching your body how to recruit all its muscle fibers for maximum force. Best for core lifts like squats and presses.\n* **Building Muscle Tone/Size (8–15 Reps):** The ideal zone for balancing challenge with volume. This is where most of your training should happen. The shorter rest periods (1–2 minutes) create the **pump\'** that drives muscle growth and endurance.\n* **Muscular Endurance (15+ Reps):** Requires light weights and short rest periods (30–60 seconds). Focuses on increasing the muscle’s ability to work for long periods (e.g., conditioning circuits).'
+          },
+          {
+            title: 'The Essential Warm-up and Cool-down Protocol',
+            body: 'Never skip your warm-up—it’s essential to prevent injury and get your mind ready. A good warm-up is specific to the workout you are about to do.\n\n**Warm-up (10–15 minutes):**\n1.  **General (5 minutes):** Light cardio (walking, cycling) to raise your heart rate and core temperature.\n2.  **Specific (5–10 minutes):** **Dynamic Stretching** (controlled movements like lunges, arm swings). This *activates* the muscles you will use. **Crucially, avoid holding stretches (static) before lifting**—save that for the cool-down.\n\n**Cool-down (5–10 minutes):** After training, use **Static Stretching** (holding stretches for 30–60 seconds) to restore muscle length and help your body relax. This is key for long-term flexibility.'
+          },
+          {
+            title: 'Training Intensity: The "Reps In Reserve" Rule',
+            body: 'You need to push hard to get results, but you should rarely train to absolute failure (where you physically can’t move the weight anymore). Training to failure is highly draining on your nervous system and increases injury risk.\n\n**The Rule:** For most of your main working sets, **always stop the set feeling like you could do 1 or 2 more perfect repetitions.**\n* This provides almost all the benefit of training hard without the massive fatigue cost of pushing to absolute failure. This is often called **RIR 1 or 2** (Reps In Reserve).'
+          },
+          {
+            title: 'Optimizing Rest Periods for Quality Sets',
+            body: 'The time you spend resting between sets is a key part of your program. Don\'t rest randomly.\n\n* **Long Rest (3–5 Minutes):** **Mandatory** for your heaviest lifts (1–6 reps). This gives your body enough time to fully replenish the quick-energy system that fuels maximal strength, ensuring your next heavy set is just as strong as the last.\n* **Moderate Rest (90–120 Seconds):** Used for muscle-building work (8–15 reps). This partial rest keeps a level of tension and \'pump\' in the muscle, which is great for growth.\n* **Short Rest (30–60 Seconds):** Used for conditioning or very high-rep work. This intentionally keeps you breathless, improving your muscular endurance.'
+          },
+          {
+            title: 'The Power of Compound Lifts (Best Bang for Your Buck)',
+            body: 'Compound exercises are movements that work **multiple major muscle groups and multiple joints** at the same time (e.g., Squat, Deadlift, Bench Press, Push-ups).\n\n**Why They Are Essential:**\n* **Maximum Efficiency:** They are the fastest way to build full-body strength and muscle tone because they engage the most total muscle mass at once.\n* **Functional Strength:** They build coordinated, real-world strength and stability that helps you in daily life (e.g., lifting groceries, moving furniture).\n* **Hormonal Boost:** Because they use the largest muscles (legs, back, chest), they trigger a natural and superior release of the anabolic (building) hormones needed for recovery. '
+          },
+          {
+            title: 'The Basics of Deloading: Scheduled Rest',
+            body: 'Your body needs a break, even if you feel fine. **Periodization** means cycling periods of hard work with planned recovery to avoid burnout and plateaus. This is often done with a **Deload Week**.\n\nEvery 4–8 weeks of hard training, plan a week where you reduce the weight and the total number of sets you do by 40–60%. This is *not* a rest week—it’s an active recovery week designed to dissipate hidden fatigue in your **nervous system**. You will feel rested, stronger, and more motivated when you start your next training block.'
+          },
+          {
+            title: 'Cardio Integration: HIIT, LISS, and Fat Burning',
+            body: 'Cardio is vital for health, heart conditioning, and burning extra calories. The type you choose matters:\n\n* **LISS (Low-Intensity Steady State):** Working at a comfortable pace (you can hold a conversation) for 30–60 minutes (e.g., fast walking, light cycling). This is great for recovery and primarily uses fat for fuel (the **Fat Burning Zone**). This should be your go-to cardio.\n* **HIIT (High-Intensity Interval Training):** Short bursts of maximal effort followed by short rest periods. HIIT significantly improves your **anaerobic fitness**. It creates a powerful **afterburn effect** (your metabolism stays high for hours). **Caution:** HIIT is mentally and physically draining; limit it to 1–2 times per week on non-lifting days to protect your recovery.'
+          },
+          {
+            title: 'Mobility and Range of Motion (ROM)',
+            body: 'Mobility is your ability to actively move a joint through its full **Range of Motion (ROM)** with strength and control. Mobility is key to injury prevention and getting the most out of your lifts.\n\nPoor mobility forces your body to compensate, which often stresses vulnerable areas (e.g., tight hips/ankles often cause back pain during squats).\n\nUse your warm-up time to do specific **mobility drills** (band stretches, foam rolling) that target any tight areas. If you can’t safely hit the full ROM for an exercise (like a deep squat), modify the movement until your mobility improves.'
+          },
+          {
+            title: 'Listening to Your Body: Pain vs. Soreness',
+            body: 'A crucial skill is knowing the difference between normal soreness and dangerous pain. **Pain is a stop sign; Soreness is a sign of adaptation.**\n\n* **Soreness (DOMS):** A general, dull ache localized in the **middle of the muscle** that peaks 24–48 hours *after* a workout. It feels stiff but usually improves with light movement.\n* **Joint Pain:** Any sharp, shooting, pinching, grinding, or highly localized discomfort that occurs **during the exercise** or at the **joint or tendon insertion points** (e.g., knee cap, low back, shoulder). **If you feel joint pain, stop the exercise immediately.** Drop the weight, adjust the technique, or replace the exercise entirely. Never "train through" joint or tendon pain.'
+          },
+          // --- NEW ARTICLES ADDED FOR TRAINING (12 existing + 4 new = 16 total) ---
+          {
+            title: 'Tempo Training: Controlling the Speed of Movement',
+            body: 'Tempo refers to the speed at which you execute the different phases of a lift, usually expressed in a four-digit code (e.g., 3-1-1-0).\n\n1. **First Digit (3):** The time (in seconds) taken to lower the weight (**Eccentric** phase). Using a slow tempo here is fantastic for muscle growth (hypertrophy).\n2. **Second Digit (1):** The time paused at the stretched position (e.g., bottom of a squat).\n3. **Third Digit (1):** The time taken to lift the weight (**Concentric** phase).\n4. **Fourth Digit (0):** The time paused at the top (contracted) position.\n\n**Benefit:** Tempo training increases **Time Under Tension (TUT)**, which is a powerful driver for muscle growth, and forces you to use pristine form by removing momentum.'
+          },
+          {
+            title: 'Accessory Lifts: Building a Complete Physique',
+            body: 'Accessory lifts (or isolation movements) support your main compound lifts by targeting specific, smaller muscle groups or weak points.\n\n**Example:** Face pulls (accessory) strengthen the rear shoulders and rotator cuffs, which improves posture and shoulder stability for the overhead press (compound lift).\n\n**Strategy:** Focus on using accessory work (e.g., bicep curls, lateral raises, tricep extensions) with moderate rest and a higher rep range (10–15 reps) to accumulate muscle volume, which is critical for muscle size and tone.'
+          },
+          {
+            title: 'Periodization Basics: Planning Your Training Year',
+            body: 'Periodization is the systematic process of cycling your training stress and intensity over time. This prevents plateaus, reduces the risk of injury, and ensures peak performance when you need it.\n\n**Macrocycle (Year):** The entire training plan (e.g., 12 months).\n**Mesocycle (Month/Block):** A specific 4-6 week block with a single focus (e.g., a "Strength Block" followed by a "Hypertrophy Block").\n**Microcycle (Week):** Your weekly routine and workout structure.\n\n**Key:** You must intentionally change the **variables** (Reps, Sets, Weight, Rest) every few weeks—otherwise, your body will stop adapting to the same stimulus.'
+          },
+          {
+            title: 'Supersets and Drop Sets: Increasing Intensity',
+            body: 'These are advanced techniques used to increase the **density** and intensity of your workout, pushing past normal limits to trigger new adaptation:\n\n* **Superset:** Performing two exercises back-to-back with minimal rest in between (e.g., a set of squats immediately followed by a set of lunges). Use supersets with antagonistic muscles (e.g., chest and back) to maintain strength while resting the target area.\n* **Drop Set:** Performing a set to near failure, immediately reducing the weight by 20-40%, and then continuing the set with no rest until failure again. This is extremely effective for muscle growth but highly fatiguing on the muscle.'
+          },
+          {
+            title: 'Identifying and Avoiding Plateaus',
+            body: 'A plateau is a period where your progress in strength, muscle size, or fat loss stalls for several weeks. It\'s a sign that your body has adapted to your current stimulus.\n\n**Common Causes:** Insufficient **Progressive Overload**, inadequate **Recovery (Sleep)**, or a sudden drop in **Calorie Deficit** (if cutting).\n\n**Solutions:**\n1. **Force a Change:** Implement one of the Progressive Overload methods (e.g., add more weight or volume).\n2. **Deload:** Take a planned deload week to dissipate systemic fatigue.\n3. **Change the Stimulus:** Switch your primary exercises or change your rep scheme drastically for a 4-week block.'
+          },
+        ]
+      },
+      {
+        id: 'mindset',
+        title: 'Habits & Mindset',
+        icon: 'Zap',
+        color: 'text-gray-700',
+        content: [
+          {
+            title: 'SMART Goals: Making Your Wishes Actionable',
+            body: 'Wishing for a goal is not enough—you need a clear roadmap. Goals must be **SMART** to provide clarity and keep you on track:\n\n* **S**pecific: "Lose 10 lbs" vs. "Feel better."\n* **M**easurable: Track progress with numbers (weight, reps, body measurements).\n* **A**chievable: Challenging but realistic for your current life.\n* **R**elevant: Aligns with your deep reasons for wanting to change.\n* **T**ime-bound: Set a specific deadline.\n\n**Focus on the Daily Process:** While the outcome (e.g., "Lose 20 lbs") is the destination, your daily focus should be on the **process** (e.g., "Hit my protein goal today," or "Get my 8,000 steps in"). You control the process; the outcome is the reward for following it.'
+          },
+          {
+            title: 'Identity-Based Habits: Who You Are Becoming',
+            body: 'Sustainable change happens when you stop trying to just change your results and instead focus on changing **who you believe you are (your Identity)**. This is a subtle but powerful psychological shift.\n\n* **Old Focus (Outcome):** "I want to lose weight."\n* **New Focus (Identity):** "**I am a healthy person who prioritizes movement and good fuel.**"\n\nWhen faced with a difficult choice (hitting snooze vs. working out), ask yourself: *"What would the person I want to become do right now?"* This makes good habits a reflection of your personality, not just a temporary chore.'
+          },
+          {
+            title: 'Setting Up Your Success Zone (Environmental Design)',
+            body: 'Success is less about willpower and more about **making the healthy choice the easiest choice** . You need to design your environment to work for you, not against you.\n\n* **Make it Obvious & Easy:** Lay your gym clothes out next to your bed. Put your protein powder and shaker cup where you will trip over them. Pre-portion snacks so they are ready to grab.\n* **Make it Difficult:** Store tempting foods (junk food, candy) in a hard-to-reach spot, in an opaque container, or, ideally, don’t bring them home at all. Adding just a few seconds of effort to a bad habit can be enough to stop it.'
+          },
+          {
+            title: 'Stress and Fat Loss: The Cortisol Connection',
+            body: 'High levels of psychological stress actively disrupt your fat loss efforts. When you are stressed, your body releases high amounts of the hormone **Cortisol**.\n\nChronic (long-term) high Cortisol levels do two things that harm weight loss:\n1. **Stores Fat:** It encourages the storage of fat, particularly around the abdomen/belly area.\n2. **Increases Cravings:** It messes up your hunger hormones, causing persistent cravings for sugary and high-fat "comfort" foods.\n\n**The takeaway:** Stress management (meditation, walking, good sleep) is not optional—it\'s a fundamental tool for metabolic success.'
+          },
+          {
+            title: 'Reframing Setbacks: The Growth Mindset',
+            body: 'Everyone slips up. The key is how you respond. Adopt a **Growth Mindset**:\n\n* **Instead of a Fixed Mindset:** "I missed two workouts this week, so I\'m a failure and should quit."\n* **Use a Growth Mindset:** "I missed two workouts, but I learned that my Tuesday/Thursday schedule is too busy. This is **feedback** telling me I need to adjust my plan for next week."\n\nTreat setbacks not as personal failings, but as **data points** that tell you your strategy needs adjusting. Your ability to learn and adjust is the measure of your success, not perfection.'
+          },
+          {
+            title: 'Non-Scale Victories (NSVs): Tracking Real Progress',
+            body: 'The scale is often misleading due to daily fluctuations in water, sodium, and carb intake. Don\'t let a fluctuating number hijack your mood or motivation. \n\nFocus on celebrating **Non-Scale Victories (NSVs)**, which are better signs of real body change:\n* **Performance:** Hitting a new personal best on a lift, walking farther than last month, or feeling stronger in daily tasks.\n* **Body Composition:** Clothes fitting loosely, noticing more muscle shape, better posture.\n* **Health & Mood:** Consistent high energy, sleeping through the night, having better focus at work.\n\nThese victories confirm that your new **Identity** is taking hold.'
+          },
+          {
+            title: 'Habit Stacking: Linking New Habits to Old Ones',
+            body: 'Making a new habit stick is all about making it automatic. **Habit Stacking** links a new desired action to an old, established action to use the existing momentum.\n\n**The Simple Formula:** *After [Current Habit], I will [New Habit].*\n\n* **Example:** "After I pour my morning coffee (Current Habit), I will immediately take my vitamins and supplements (New Habit)."\n* **Example:** "After I finish eating dinner (Current Habit), I will immediately load the dishwasher and pack my gym bag for the morning (New Habit)."\n\nThis bypasses the need for willpower because the trigger is already automatic.'
+          },
+          {
+            title: 'Finding Your Deep "Why" (Intrinsic Motivation)',
+            body: 'The social environment—parties, dinners, or casual meetings—is often the biggest hurdle to maintaining habits. Dealing with pressure to eat or drink outside your plan is less about what you *say* and more about your internal **confidence** in your choices.\n\n1. **Reframing Your Choices:** Your healthy habits aren\'t a punishment; they are a **priority**. View your food choices as fuel that supports your performance, energy, and mental clarity. When you internalize this, your decisions feel less like "dieting" and more like **self-care**.\n2. **Boundary Confidence:** The key to a non-defensive response is brevity and finality. You don\'t owe anyone a long explanation for your decisions. A simple, confident "No, thank you, I\'m good" or "I\'m going to pass on that one today" is usually enough. People respect clear boundaries, and being secure in your "why" makes the interaction quick and easy.\n3. **The Compromise Strategy (80/20):** If you want to participate without completely derailing your goals, practice moderation. Focus on enjoying the social context and connection. If you choose to have a treat, decide on the amount beforehand (e.g., a few bites of dessert, one small appetizer). This maintains flexibility and prevents the "all-or-nothing" guilt cycle.\n4. **Identity Reinforcement:** Every time you successfully navigate social pressure, you reinforce your new **Identity** as a person who is committed to their health. This builds confidence and makes the next social situation easier.'
+          },
+          {
+            title: 'Mastering Sleep Hygiene for Recovery',
+            body: 'Sleep is the most effective form of recovery you have. It\'s where your body repairs muscle and balances all the hormones that control hunger, stress, and fat storage. Poor sleep is a massive metabolic disruptor.\n\n**Actionable Sleep Hygiene:**\n* **The 1-Hour Wind Down:** Stop all work and put away phones/tablets/TV (blue light sources) at least 60 minutes before bed. Blue light blocks the sleep hormone **Melatonin**.\n* **The Cool Rule:** Keep your bedroom cool (ideally 60–67°F or 15–19°C) as your body naturally lowers its temperature to fall asleep.\n* **Consistency:** Go to bed and wake up at roughly the same time every day, even on weekends, to set your body\'s internal clock (**Circadian Rhythm**).'
+          },
+          {
+            title: 'Dealing with Social Pressure: Prioritizing Your Confidence',
+            body: 'The social environment—parties, dinners, or casual meetings—is often the biggest hurdle to maintaining habits. Dealing with pressure to eat or drink outside your plan is less about what you *say* and more about your internal **confidence** in your choices.\n\n1. **Reframing Your Choices:** Your healthy habits aren\'t a punishment; they are a **priority**. View your food choices as fuel that supports your performance, energy, and mental clarity. When you internalize this, your decisions feel less like "dieting" and more like **self-care**.\n2. **Boundary Confidence:** The key to a non-defensive response is brevity and finality. You don\'t owe anyone a long explanation for your decisions. A simple, confident "No, thank you, I\'m good" or "I\'m going to pass on that one today" is usually enough. People respect clear boundaries, and being secure in your "why" makes the interaction quick and easy.\n3. **The Compromise Strategy (80/20):** If you want to participate without completely derailing your goals, practice moderation. Focus on enjoying the social context and connection. If you choose to have a treat, decide on the amount beforehand (e.g., a few bites of dessert, one small appetizer). This maintains flexibility and prevents the "all-or-nothing" guilt cycle.\n4. **Identity Reinforcement:** Every time you successfully navigate social pressure, you reinforce your new **Identity** as a person who is committed to their health. This builds confidence and makes the next social situation easier.'
+          },
+          // --- NEW ARTICLES ADDED FOR MINDSET (10 existing + 6 new = 16 total) ---
+          {
+            title: 'The All-or-Nothing Mentality Trap',
+            body: 'The **"All-or-Nothing"** mindset is one of the biggest reasons people quit. It says, "If I can\'t do it perfectly, I might as well not do it at all." This leads to catastrophic thinking after a small slip-up (e.g., eating one unplanned dessert means the whole week is ruined).\n\n**Solution:** Embrace the **"Good Enough"** mindset. If you miss a workout, go tomorrow. If you overate at dinner, just track it and eat clean for the next meal. The goal is consistency, not perfection. One bad meal or missed workout does not derail months of progress; only quitting does.'
+          },
+          {
+            title: 'Self-Monitoring: The Power of Tracking Data',
+            body: 'What gets measured gets managed. **Self-Monitoring** is the act of collecting data on your behavior (e.g., tracking food, steps, sleep, or lift numbers). This creates immediate accountability and provides crucial **feedback**.\n\n**Key Metrics to Track:**\n* **Food Intake:** (A few weeks to establish awareness)\n* **Steps/NEAT:** (Daily minimum)\n* **Lift Performance:** (Weekly PRs or volume increases)\n* **Sleep:** (Consistency and duration)\n\nTracking removes guesswork. When progress stalls, you can look at the data to see *exactly* where you need to apply Progressive Overload or adjust your nutrition.'
+          },
+          {
+            title: 'The 5-Minute Rule for Low Motivation',
+            body: 'Motivation is unreliable. When you lack the motivation to start a difficult task (like going to the gym or preparing a healthy meal), use the **5-Minute Rule**:\n\n**Commit to doing the task for only five minutes.**\n\nIf you still hate it after five minutes, you have permission to stop. What usually happens is that the **momentum** you build in those first five minutes overcomes the initial inertia, and you finish the task. Getting started is always the hardest part; this rule makes getting started easy.'
+          },
+          {
+            title: 'Overcoming Body Image Challenges',
+            body: 'It is easy to fall into the trap of constantly comparing your body to highlight reels on social media. Remember that fitness is a **personal journey** focused on health, function, and sustained energy, not just aesthetics.\n\n**Focus on Function:** Shift your focus from *how your body looks* to *what your body can do*. Celebrate new personal bests, greater endurance, and better mobility. These **performance metrics** are objective and reinforce the feeling of being strong and capable, which is more motivating than temporary appearance goals.'
+          },
+          {
+            title: 'Accountability and Support Systems',
+            body: 'Trying to do it all alone is one of the hardest ways to achieve a goal. An effective **Accountability System** provides external motivation and social pressure to follow through.\n\n**Your Coach:** This is your primary accountability partner, providing structure and feedback.\n**A Training Partner/Friend:** Having a friend to meet at the gym or share recipes with makes the process more fun and much harder to skip.\n**Public Commitment:** Telling a few trusted people your goals increases your internal drive to follow through because you don\'t want to let them (or yourself) down.'
+          },
+          {
+            title: 'Mindfulness in Eating and Training',
+            body: 'Mindfulness means paying attention to the present moment without judgment. Applying this to fitness dramatically improves results:\n\n* **Mindful Eating:** Slow down, put away distractions (phone/TV), and focus on the taste, texture, and physical feeling of fullness (**Satiety Signals**). This prevents overeating and improves digestion.\n* **Mindful Training (Mind-Muscle Connection):** Focus intensely on the muscle working during your set, rather than just moving the weight. This maximizes the muscle damage signal, which is critical for muscle growth, and prevents your joints from compensating for the lack of muscle tension.'
+          },
+        ]
+      },
+    ];
+
+    // --- UTILITY COMPONENTS (UNCHANGED) ---
+
+    const AccordionItem = ({ item, isActive, toggleActive }) => (
+      <div className="border-b border-gray-300">
+        <button
+          className="flex justify-between items-center w-full p-4 text-left font-semibold text-gray-800 hover:bg-gray-100 transition-colors"
+          onClick={toggleActive}
+          aria-expanded={isActive}
+          aria-controls={`content-${item.title.replace(/\s/g, '-')}`}
+        >
+          <span>{item.title}</span>
+          <Icon name="ChevronDown" className={`w-5 h-5 transition-transform ${isActive ? 'transform rotate-180' : ''}`} />
+        </button>
+        <div
+          id={`content-${item.title.replace(/\s/g, '-')}`}
+          className={`overflow-hidden transition-all duration-300 ease-in-out ${isActive ? 'max-h-[2200px] opacity-100 p-4 pt-0' : 'max-h-0 opacity-0 p-0'}`}
+        >
+          {/* RENDERED CONTENT: Changed from <pre> to <div> and uses renderMarkdown for bolding */}
+          <div className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap font-sans bg-gray-50 p-3 rounded-lg border border-gray-200">
+            {renderMarkdown(item.body ? item.body.trim() : 'Content loading error or missing.')}
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-);
+    );
 
-// --- HOME PAGE COMPONENT ---
-// Updated to accept sections data and navigation handler
-const HomeContent = ({ color, sections, onNavigate }) => (
-    <div className="space-y-8 p-6 bg-white rounded-xl shadow-lg border-t-8 border-black min-h-[600px] flex flex-col justify-center">
-        <header className="text-center">
-            {/* START: Changed icon to use both BookOpen and Brain */}
-            <div className="flex items-center justify-center space-x-3 mb-4">
-                <Icon name="BookOpen" className={`w-12 h-12 ${color}`} />
-                <Icon name="Brain" className={`w-12 h-12 ${color}`} />
-            </div>
-            {/* END: Changed icon to use both BookOpen and Brain */}
-            <h2 className="text-4xl sm:text-5xl font-extrabold text-gray-900 tracking-tight">
-                CLIENT KNOWLEDGE BASE
-            </h2>
-            <p className={`text-xl font-bold tracking-widest mt-1 text-black/80`}>
-                #FITTER #STRONGER #BETTER
-            </p>
-        </header>
-
-        <div className="prose max-w-none text-gray-600 space-y-6">
-            <p className="text-xl leading-relaxed text-center font-medium">
-                This is your definitive reference for all the <strong className="font-bold text-gray-900">science-backed strategies</strong> needed to support your training & nutrition, broaden your knowledge, optimize recovery, and make meaningful change to help you achieve your fitness goals.
-            </p>
-
-            <h3 className="text-2xl font-bold text-gray-800 border-b pb-2">Master the Fundamentals:</h3>
-            
-            {/* Clickable Sections Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {sections.map((section) => (
-                <button
-                  key={section.id}
-                  onClick={() => onNavigate(section.id)}
-                  className={`p-4 rounded-lg shadow-sm border text-left transition-transform duration-200 hover:scale-[1.01] hover:shadow-lg focus:ring-2 focus:ring-black block w-full h-full
-                    ${section.id === 'nutrition' ? 'bg-gray-50 border-gray-200' :
-                      section.id === 'training' ? 'bg-gray-50 border-gray-200' :
-                      section.id === 'mindset' ? 'bg-gray-50 border-gray-200' :
-                      'bg-gray-50 border-gray-200'}
-                  `}
-                >
-                  <Icon name={section.icon} className={`w-6 h-6 inline mr-3 ${ACCENT_COLOR}`} />
-                  <strong className={`${ACCENT_COLOR}`}>{section.title}:</strong>
-                  <p className="mt-1 text-sm text-gray-600">
-                    {section.id === 'nutrition' && 'Master Calorie Balance, Macro breakdowns (Protein, Carbs, Fats), Hydration, and practical strategies for meal prep and eating out.'}
-                    {section.id === 'training' && 'The core of growth, covering Progressive Overload, Rep Ranges, proper Form & Technique, Recovery Science (Sleep), and how to periodize your workouts.'}
-                    {section.id === 'mindset' && 'Build resilience with SMART Goal Setting, learn to deal with plateaus, design your environment for success, and overcome social pressure.'}
-                    {section.id === 'ai-brain' && 'Ask any general fitness question and get immediate, grounded, and evidence-based answers in real-time.'}
-                  </p>
-                </button>
-              ))}
-            </div>
-
-            <footer className="mt-8 pt-4 border-t border-gray-200 text-center">
-                <p className="text-sm italic text-gray-500">
-                    This resource complements your personalized training plan. <strong className="font-bold text-gray-600">Select a category from the sidebar or above to learn more.</strong>
+    // --- HOME PAGE COMPONENT (UNCHANGED) ---
+    // Updated to accept sections data and navigation handler
+    const HomeContent = ({ color, sections, onNavigate }) => (
+        <div className="space-y-8 p-6 bg-white rounded-xl shadow-lg border-t-8 border-black min-h-[600px] flex flex-col justify-center">
+            <header className="text-center">
+                {/* START: Changed icon to use both BookOpen and Brain */}
+                <div className="flex items-center justify-center space-x-3 mb-4">
+                    <Icon name="BookOpen" className={`w-12 h-12 ${color}`} />
+                    <Icon name="Brain" className={`w-12 h-12 ${color}`} />
+                </div>
+                {/* END: Changed icon to use both BookOpen and Brain */}
+                <h2 className="text-4xl sm:text-5xl font-extrabold text-gray-900 tracking-tight">
+                    CLIENT KNOWLEDGE BASE
+                </h2>
+                <p className={`text-xl font-bold tracking-widest mt-1 text-black/80`}>
+                    #FITTER #STRONGER #BETTER
                 </p>
-            </footer>
+            </header>
+
+            <div className="prose max-w-none text-gray-600 space-y-6">
+                <p className="text-xl leading-relaxed text-center font-medium">
+                    This is your definitive reference for all the <strong className="font-bold text-gray-900">science-backed strategies</strong> needed to support your training & nutrition, broaden your knowledge, optimize recovery, and make meaningful change to help you achieve your fitness goals.
+                </p>
+
+                <h3 className="text-2xl font-bold text-gray-800 border-b pb-2">Master the Fundamentals:</h3>
+                
+                {/* Clickable Sections Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {sections.map((section) => (
+                    <button
+                      key={section.id}
+                      onClick={() => onNavigate(section.id)}
+                      className={`p-4 rounded-lg shadow-sm border text-left transition-transform duration-200 hover:scale-[1.01] hover:shadow-lg focus:ring-2 focus:ring-black block w-full h-full
+                        ${section.id === 'nutrition' ? 'bg-gray-50 border-gray-200' :
+                          section.id === 'training' ? 'bg-gray-50 border-gray-200' :
+                          section.id === 'mindset' ? 'bg-gray-50 border-gray-200' :
+                          'bg-gray-50 border-gray-200'}
+                      `}
+                    >
+                      <Icon name={section.icon} className={`w-6 h-6 inline mr-3 ${ACCENT_COLOR}`} />
+                      <strong className={`${ACCENT_COLOR}`}>{section.title}:</strong>
+                      <p className="mt-1 text-sm text-gray-600">
+                        {section.id === 'nutrition' && 'Master Calorie Balance, Macro breakdowns (Protein, Carbs, Fats), Hydration, and practical strategies for meal prep and eating out.'}
+                        {section.id === 'training' && 'The core of growth, covering Progressive Overload, Rep Ranges, proper Form & Technique, Recovery Science (Sleep), and how to periodize your workouts.'}
+                        {section.id === 'mindset' && 'Build resilience with SMART Goal Setting, learn to deal with plateaus, design your environment for success, and overcome social pressure.'}
+                        {section.id === 'ai-brain' && 'Ask any general fitness question and get immediate, grounded, and evidence-based answers in real-time.'}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+
+                <footer className="mt-8 pt-4 border-t border-gray-200 text-center">
+                    <p className="text-sm italic text-gray-500">
+                        This resource complements your personalized training plan. <strong className="font-bold text-gray-600">Select a category from the sidebar or above to learn more.</strong>
+                    </p>
+                </footer>
+            </div>
         </div>
-    </div>
-);
+    );
 
 
-// --- AI BRAIN COMPONENT ---
+    // --- AI BRAIN COMPONENT (UNCHANGED) ---
 
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-const AICoach = () => {
-  const [query, setQuery] = useState('');
-  const [response, setResponse] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  
-  // STARTING ALL CATEGORIES AS CLOSED (FALSE)
-  const [expandedCategories, setExpandedCategories] = useState({
-    "Nutrition & Fueling": false,
-    "Training Principles": false,
-    "Habits & Mindset": false,
-  });
+    const AICoach = () => {
+      const [query, setQuery] = React.useState('');
+      const [response, setResponse] = React.useState(null);
+      const [isLoading, setIsLoading] = React.useState(false);
+      const [error, setError] = React.useState(null);
+      
+      // STARTING ALL CATEGORIES AS CLOSED (FALSE)
+      const [expandedCategories, setExpandedCategories] = React.useState({
+        "Nutrition & Fueling": false,
+        "Training Principles": false,
+        "Habits & Mindset": false,
+      });
 
-  // Reference for the form to submit programmatically
-  const formRef = React.useRef(null); 
+      // Reference for the form to submit programmatically
+      const formRef = React.useRef(null); 
 
-  // --- CATEGORIZED SUGGESTED QUERIES (NEW) ---
-  const nutritionQueries = [
-    "How much protein do I actually need to build muscle?",
-    "Explain the difference between simple and complex carbs.",
-    "What are the benefits of taking creatine?",
-    "What are good sources of healthy dietary fats?",
-  ];
+      // --- CATEGORIZED SUGGESTED QUERIES (NEW) ---
+      const nutritionQueries = [
+        "How much protein do I actually need to build muscle?",
+        "Explain the difference between simple and complex carbs.",
+        "What are the benefits of taking creatine?",
+        "What are good sources of healthy dietary fats?",
+      ];
 
-  const trainingQueries = [
-    "Explain progressive overload and give examples.",
-    "What are the best mobility drills for squats?",
-    "What is the RIR (Reps in Reserve) rule?",
-    "Should I do HIIT or LISS cardio for fat loss?",
-  ];
+      const trainingQueries = [
+        "Explain progressive overload and give examples.",
+        "What are the best mobility drills for squats?",
+        "What is the RIR (Reps in Reserve) rule?",
+        "Should I do HIIT or LISS cardio for fat loss?",
+      ];
 
-  const mindsetQueries = [
-    "How does stress (cortisol) affect my fat loss efforts?",
-    "Give me an example of habit stacking for my morning routine.",
-    "How can I set SMART goals for my fitness journey?",
-    "What are non-scale victories (NSVs)?",
-  ];
+      const mindsetQueries = [
+        "How does stress (cortisol) affect my fat loss efforts?",
+        "Give me an example of habit stacking for my morning routine.",
+        "How can I set SMART goals for my fitness journey?",
+        "What are non-scale victories (NSVs)?",
+      ];
 
-  const categorizedQueries = [
-    { title: "Nutrition & Fueling", queries: nutritionQueries },
-    { title: "Training Principles", queries: trainingQueries },
-    { title: "Habits & Mindset", queries: mindsetQueries },
-  ];
-  // --- END NEW QUERIES ---
+      const categorizedQueries = [
+        { title: "Nutrition & Fueling", queries: nutritionQueries },
+        { title: "Training Principles", queries: trainingQueries },
+        { title: "Habits & Mindset", queries: mindsetQueries },
+      ];
+      // --- END NEW QUERIES ---
 
-  const systemPrompt = "Act as a comprehensive, knowledge-based Q&A engine focused on fitness, nutrition, and training. Provide generalized, science-backed, and practical advice. Explicitly state that for personalized plans, diagnoses, or critical training decisions, the user must consult their actual personal trainer or medical professional. Keep responses concise and focused, using bullet points or bold text where helpful.";
-  const apiKey = ""; // API key is provided by the runtime environment
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+      const systemPrompt = "Act as a comprehensive, knowledge-based Q&A engine focused on fitness, nutrition, and training. Provide generalized, science-backed, and practical advice. Explicitly state that for personalized plans, diagnoses, or critical training decisions, the user must consult their actual personal trainer or medical professional. Keep responses concise and focused, using bullet points or bold text where helpful.";
+      const apiKey = ""; // API key is provided by the runtime environment
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
-  const handleSubmit = async (e) => {
-    // If e exists and it's a form submit event, prevent default.
-    if (e && e.preventDefault) {
-      e.preventDefault();
-    }
-    
-    // Use the current query state or the explicit query value for submission
-    const queryToSubmit = query.trim() || (e?.target?.query?.value || '').trim();
+      const handleSubmit = async (e) => {
+        // If e exists and it's a form submit event, prevent default.
+        if (e && e.preventDefault) {
+          e.preventDefault();
+        }
+        
+        // Use the current query state or the explicit query value for submission
+        const queryToSubmit = query.trim() || (e?.target?.query?.value || '').trim();
 
-    if (!queryToSubmit || isLoading) return;
+        if (!queryToSubmit || isLoading) return;
 
-    setResponse(null);
-    setError(null);
-    setIsLoading(true);
+        setResponse(null);
+        setError(null);
+        setIsLoading(true);
 
-    // Clear input after capturing the query
-    setQuery(''); 
+        // Clear input after capturing the query
+        setQuery(''); 
 
-    try {
-      let result = null;
-      let attempt = 0;
-      const maxRetries = 5;
-
-      while (attempt < maxRetries) {
         try {
-          const payload = {
-            contents: [{ parts: [{ text: queryToSubmit }] }],
-            tools: [{ "google_search": {} }],
-            systemInstruction: {
-              parts: [{ text: systemPrompt }]
-            },
-          };
+          let result = null;
+          let attempt = 0;
+          const maxRetries = 5;
 
-          const apiResponse = await fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
+          while (attempt < maxRetries) {
+            try {
+              const payload = {
+                contents: [{ parts: [{ text: queryToSubmit }] }],
+                tools: [{ "google_search": {} }],
+                systemInstruction: {
+                  parts: [{ text: systemPrompt }]
+                },
+              };
 
-          if (!apiResponse.ok) {
-            throw new Error(`HTTP error! status: ${apiResponse.status}`);
+              // Check if fetch is defined (it should be in a modern browser environment)
+              if (typeof fetch === 'undefined') {
+                throw new Error("The fetch API is not available in this environment.");
+              }
+
+              const apiResponse = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              });
+
+              if (!apiResponse.ok) {
+                throw new Error(`HTTP error! status: ${apiResponse.status}`);
+              }
+
+              result = await apiResponse.json();
+              break; // Success, exit loop
+
+            } catch (err) {
+              attempt++;
+              if (attempt >= maxRetries) {
+                console.error("Max retries reached. Failed to fetch AI response.", err);
+                throw new Error("The AI Brain is currently unavailable. Please try again later.");
+              }
+              const delay = Math.pow(2, attempt) * 1000;
+              await sleep(delay); // Exponential backoff
+            }
           }
 
-          result = await apiResponse.json();
-          break; // Success, exit loop
+          const candidate = result?.candidates?.[0];
+          const text = candidate?.content?.parts?.[0]?.text || "Sorry, I couldn't generate a helpful response right now. Please try rephrasing your question.";
+          
+          // Extract grounding sources (citations)
+          let sources = [];
+          const groundingMetadata = candidate?.groundingMetadata;
+          if (groundingMetadata && groundingMetadata.groundingAttributions) {
+              sources = groundingMetadata.groundingAttributions
+                  .map(attribution => ({
+                      uri: attribution.web?.uri,
+                      title: attribution.web?.title,
+                  }))
+                  .filter(source => source.uri && source.title);
+          }
+
+          setResponse({ text, sources });
 
         } catch (err) {
-          attempt++;
-          if (attempt >= maxRetries) {
-            console.error("Max retries reached. Failed to fetch AI response.", err);
-            throw new Error("The AI Brain is currently unavailable. Please try again later.");
-          }
-          const delay = Math.pow(2, attempt) * 1000;
-          await sleep(delay); // Exponential backoff
+          setError(err.message);
+        } finally {
+          setIsLoading(false);
         }
-      }
+      };
 
-      const candidate = result?.candidates?.[0];
-      const text = candidate?.content?.parts?.[0]?.text || "Sorry, I couldn't generate a helpful response right now. Please try rephrasing your question.";
+      const handleSuggestionClick = (suggestion) => {
+        // Set the query state, then trigger a form submission.
+        setQuery(suggestion);
+        setTimeout(() => {
+            // Use the ref to submit the form which ensures the input value (now set via state) is available.
+            if (formRef.current) {
+                // Manually submit the form
+                formRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+            }
+        }, 0);
+      };
       
-      // Extract grounding sources (citations)
-      let sources = [];
-      const groundingMetadata = candidate?.groundingMetadata;
-      if (groundingMetadata && groundingMetadata.groundingAttributions) {
-          sources = groundingMetadata.groundingAttributions
-              .map(attribution => ({
-                  uri: attribution.web?.uri,
-                  title: attribution.web?.title,
-              }))
-              .filter(source => source.uri && source.title);
-      }
+      // New function to handle category collapse/expand
+      const toggleCategory = (title) => {
+        setExpandedCategories(prev => ({
+          ...prev,
+          [title]: !prev[title]
+        }));
+      };
 
-      setResponse({ text, sources });
-
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSuggestionClick = (suggestion) => {
-    // Set the query state, then trigger a form submission.
-    setQuery(suggestion);
-    setTimeout(() => {
-        // Use the ref to submit the form which ensures the input value (now set via state) is available.
-        if (formRef.current) {
-            formRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-        }
-    }, 0);
-  };
-  
-  // New function to handle category collapse/expand
-  const toggleCategory = (title) => {
-    setExpandedCategories(prev => ({
-      ...prev,
-      [title]: !prev[title]
-    }));
-  };
-
-  return (
-    <div className="flex flex-col h-full min-h-[600px]">
-      <div className="mb-6">
-        <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 flex items-center">
-            {/* UPDATED HEADING TEXT and ICON COLOR */}
-            <Icon name="Brain" className={`w-8 h-8 mr-3 ${ACCENT_COLOR}`} />
-            Gymini: AI Coaching Brain
-        </h2>
-        <p className="mt-2 text-gray-500 text-lg border-l-4 border-black pl-4 py-2 bg-gray-50/50 rounded-lg">
-          Tap into a vast knowledge base. Ask general questions on nutrition, training, and technique. <strong className="font-bold text-gray-900">For specific, tailored advice on your program, please message your actual coach.</strong>
-        </p>
-      </div>
-
-      {/* Response Area */}
-      <div className="flex-grow bg-white p-4 rounded-xl shadow-inner mb-6 border border-gray-200">
-        {isLoading && (
-          <div className="text-center p-8 text-black">
-            <Icon name="Loader" className="w-8 h-8 mx-auto animate-spin" />
-            <p className="mt-2">Thinking... Accessing the fitness knowledge base.</p>
+      return (
+        <div className="flex flex-col h-full min-h-[600px]">
+          <div className="mb-6">
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 flex items-center">
+                {/* UPDATED HEADING TEXT and ICON COLOR */}
+                <Icon name="Brain" className={`w-8 h-8 mr-3 ${ACCENT_COLOR}`} />
+                Gymini: AI Coaching Brain
+            </h2>
+            <p className="mt-2 text-gray-500 text-lg border-l-4 border-black pl-4 py-2 bg-gray-50/50 rounded-lg">
+              Tap into a vast knowledge base. Ask general questions on nutrition, training, and technique. <strong className="font-bold text-gray-900">For specific, tailored advice on your program, please message your actual coach.</strong>
+            </p>
           </div>
-        )}
 
-        {error && (
-          <div className="bg-gray-100 border border-black text-black px-4 py-3 rounded-lg relative">
-            <p className="font-bold">Error:</p>
-            <p className="text-sm">{error}</p>
+          {/* Response Area */}
+          <div className="flex-grow bg-white p-4 rounded-xl shadow-inner mb-6 border border-gray-200">
+            {isLoading && (
+              <div className="text-center p-8 text-black">
+                <Icon name="Loader" className="w-8 h-8 mx-auto" />
+                <p className="mt-2">Thinking... Accessing the fitness knowledge base.</p>
+              </div>
+            )}
+
+            {error && (
+              <div className="bg-gray-100 border border-black text-black px-4 py-3 rounded-lg relative">
+                <p className="font-bold">Error:</p>
+                <p className="text-sm">{error}</p>
+              </div>
+            )}
+
+            {response ? (
+              <div className="space-y-4">
+                <h3 className="font-bold text-lg text-gray-800">Gymini Response:</h3>
+                <p className="whitespace-pre-wrap text-gray-700">{response.text}</p>
+                
+                {response.sources.length > 0 && (
+                  <div className="mt-4 pt-3 border-t border-gray-200 text-xs text-gray-500">
+                    <p className="font-semibold">Sources:</p>
+                    <ul className="list-disc ml-4 space-y-1 mt-1">
+                      {response.sources.slice(0, 3).map((source, index) => (
+                        <li key={index} className="truncate">
+                          <a href={source.uri} target="_blank" rel="noopener noreferrer" className="text-black hover:underline">{source.title}</a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                <div className="mt-6 p-3 bg-gray-100 border-l-4 border-black rounded-lg text-sm text-gray-800 font-medium shadow-sm">
+                    <strong className="font-bold text-gray-900">IMPORTANT:</strong> This advice is general knowledge. For personalized programming, check-ins, or questions specific to your training history and medical status, <strong className="font-bold text-gray-900">please message your actual Personal Trainer!</strong>
+                </div>
+              </div>
+            ) : !isLoading && (
+              <div className="text-center p-8 text-gray-400">
+                <Icon name="Brain" className="w-10 h-10 mx-auto mb-3" />
+                <p>Ask a general question about fitness, nutrition, or motivation.</p>
+              </div>
+            )}
           </div>
-        )}
 
-        {response ? (
-          <div className="space-y-4">
-            <h3 className="font-bold text-lg text-gray-800">Gymini Response:</h3>
-            
-            {/* UPDATED: Using the new renderMarkdown utility */}
-            <div className="text-gray-700">
-              {renderMarkdown(response.text)}
+          {/* Suggested Queries (NEW CATEGORIZED COLLAPSIBLE LAYOUT) */}
+          <div className="mb-4">
+            <p className="text-sm font-semibold text-gray-700 mb-2">Popular Searches (Click to Ask):</p>
+            <div className="space-y-2 border border-gray-300 rounded-xl overflow-hidden shadow-md">
+              {categorizedQueries.map((category) => {
+                const isExpanded = expandedCategories[category.title];
+                return (
+                  <div key={category.title} className="border-b border-gray-200 last:border-b-0">
+                    
+                    {/* Collapsible Header/Button */}
+                    <button
+                      className="flex justify-between items-center w-full p-3 text-left font-bold text-sm text-gray-800 bg-gray-50 hover:bg-gray-100 transition-colors"
+                      onClick={() => toggleCategory(category.title)}
+                      aria-expanded={isExpanded}
+                    >
+                      <span>{category.title}</span>
+                      <Icon name="ChevronDown" className={`w-4 h-4 transition-transform ${isExpanded ? 'transform rotate-180' : ''}`} />
+                    </button>
+                    
+                    {/* Collapsible Content */}
+                    <div 
+                      className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[300px] opacity-100 p-3 pt-1' : 'max-h-0 opacity-0 p-0'}`}
+                    >
+                      <div className="flex flex-wrap gap-2">
+                        {category.queries.map((s, index) => (
+                          <button
+                            key={index}
+                            onClick={() => handleSuggestionClick(s)}
+                            className={`text-xs px-3 py-1.5 rounded-full border border-gray-300 text-gray-600 bg-white hover:bg-gray-100 transition-colors shadow-sm
+                              ${isLoading ? 'opacity-60 cursor-not-allowed' : ''}
+                            `}
+                            disabled={isLoading}
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            {/* END UPDATED */}
+          </div>
+
+
+          {/* Input Form */}
+          <form ref={formRef} onSubmit={handleSubmit} className="flex space-x-3">
+            <input
+              type="text"
+              name="query" // Added name for easier programmatic access in handleSubmit
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="e.g., 'What is progressive overload?' or 'Best source of complex carbs?'"
+              className="flex-grow p-3 border border-gray-400 rounded-xl focus:ring-2 focus:ring-black focus:border-black transition shadow-sm"
+              disabled={isLoading}
+            />
+            <button
+              type="submit"
+              className={`p-3 rounded-xl text-white transition duration-200 shadow-md ${isLoading ? 'bg-gray-500' : 'bg-black hover:bg-gray-800'}`}
+              disabled={isLoading}
+            >
+              <Icon name="Send" className="w-6 h-6" />
+            </button>
+          </form>
+        </div>
+      );
+    };
+
+
+    // --- MAIN APP COMPONENT (UNCHANGED) ---
+
+    const App = () => {
+      const [activeSectionId, setActiveSectionId] = React.useState(knowledgeSections[0].id);
+      const [activeAccordion, setActiveAccordion] = React.useState(null);
+      const [isMenuOpen, setIsMenuOpen] = React.useState(false); // For mobile menu
+
+      const activeSection = knowledgeSections.find(s => s.id === activeSectionId);
+      const cardSections = knowledgeSections.filter(s => s.id !== 'home' && s.id !== 'recipes');
+
+      const currentYear = new Date().getFullYear(); // Moved up for use in the new footer
+
+      const toggleAccordion = (title) => {
+        setActiveAccordion(activeAccordion === title ? null : title);
+      };
+
+      // Close mobile menu when a section is selected
+      const handleSectionClick = (id) => {
+        setActiveSectionId(id);
+        setIsMenuOpen(false);
+        setActiveAccordion(null); // Reset accordion state when switching sections
+      };
+
+      const renderContent = () => {
+        if (!activeSection) {
+            return (
+                <div className="text-center py-20">
+                  <Icon name="BookOpen" className="w-12 h-12 mx-auto text-black mb-4" /> 
+                  <h2 className="2xl font-bold text-gray-900">Welcome to Your Knowledge Base</h2>
+                  <p className="text-gray-500 mt-2">Select a category from the menu to start learning.</p>
+                </div>
+            );
+        }
+
+        if (activeSectionId === 'home') {
+            return <HomeContent color={activeSection.color} sections={cardSections} onNavigate={handleSectionClick} />;
+        }
+        
+        if (activeSectionId === 'ai-brain') {
+            return <AICoach />;
+        }
+        
+        // Render standard knowledge base content
+        if (activeSection.content) {
+            return (
+                <section>
+                  <div className="flex items-center mb-6">
+                    <Icon name={activeSection.icon} className={`w-8 h-8 mr-3 ${activeSection.color}`} />
+                    <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900">{activeSection.title}</h2>
+                  </div>
+                  
+                  <p className="mb-8 text-gray-500 text-lg border-l-4 border-black pl-4 py-2 bg-gray-50/50 rounded-lg">
+                    This section contains the fundamental knowledge required for success. Review these topics regularly to build a strong foundation for your performance and fitness journey.
+                  </p>
+
+                  {/* Accordion Content */}
+                  <div className="space-y-0 border border-gray-300 rounded-xl overflow-hidden shadow-lg">
+                    {activeSection.content.map((item, index) => (
+                      <AccordionItem
+                        key={index}
+                        item={item}
+                        isActive={activeAccordion === item.title}
+                        toggleActive={() => toggleAccordion(item.title)}
+                      />
+                    ))}
+                  </div>
+                </section>
+            );
+        }
+
+        return null;
+      };
+
+      return (
+        <div className="min-h-screen bg-gray-50 font-sans antialiased">
+          <div className="max-w-7xl mx-auto flex flex-col lg:flex-row shadow-xl bg-white rounded-xl my-4 sm:my-8 overflow-hidden">
             
-            {response.sources.length > 0 && (
-              <div className="mt-4 pt-3 border-t border-gray-200 text-xs text-gray-500">
-                <p className="font-semibold">Sources:</p>
-                <ul className="list-disc ml-4 space-y-1 mt-1">
-                  {response.sources.slice(0, 3).map((source, index) => (
-                    <li key={index} className="truncate">
-                      <a href={source.uri} target="_blank" rel="noopener noreferrer" className="text-black hover:underline">{source.title}</a>
+            {/* --- Sidebar / Mobile Menu (Pure Black) --- */}
+            <div className="lg:w-1/4 bg-black text-white p-6 shadow-2xl">
+              <header className="mb-8 flex justify-between items-center lg:block">
+                {/* Branding Block: Updated to new multi-line format */}
+                <button
+                  onClick={() => handleSectionClick('home')}
+                  className="transition duration-300 text-left w-full"
+                >
+                    <div className="font-black text-white tracking-wider leading-none">
+                        {/* Main Title: Largest, Widest Tracking */}
+                        <div className="text-2xl sm:text-3xl tracking-widest">COACH CHRIS</div>
+                        {/* Secondary Title: Smaller, Tighter Tracking, Slightly Translucent */}
+                        <div className="text-xs tracking-tight text-white/80 mt-[-4px] leading-none">CIRCULAR ROOTS COACHING</div>
+                        {/* Tagline: Smallest, Tightest Tracking, More Translucent */}
+                        <div className="text-[10px] tracking-tighter text-white/60 leading-none">TRAIN UNCNVNTNL</div>
+                    </div>
+                </button>
+                
+                <button 
+                  className="lg:hidden p-2 rounded-lg text-gray-200 hover:bg-gray-800 transition"
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  aria-label="Toggle navigation menu"
+                >
+                  {isMenuOpen ? <Icon name="X" className="w-6 h-6" /> : <Icon name="List" className="w-6 h-6" />}
+                </button>
+              </header>
+
+              {/* Navigation Items (Visible always on desktop, conditionally on mobile) */}
+              <nav className={`${isMenuOpen ? 'block' : 'hidden'} lg:block`}>
+                <ul className="space-y-3">
+                  {knowledgeSections.map((section) => (
+                    <li key={section.id}>
+                      <button
+                        onClick={() => handleSectionClick(section.id)}
+                        className={`flex items-center w-full p-3 rounded-lg text-left transition duration-200 group
+                          ${activeSectionId === section.id
+                            ? `${ACCENT_CLASS} text-white shadow-lg font-bold`
+                            : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                          }`}
+                      >
+                        <Icon name={section.icon} className={`w-5 h-5 mr-3 
+                            ${activeSectionId === section.id || section.id === 'home' || section.id === 'training' || section.id === 'ai-brain' ? 'text-white' : 'text-gray-400'}
+                        `} />
+                        {section.title}
+                      </button>
                     </li>
                   ))}
                 </ul>
-              </div>
-            )}
-            
-            <div className="mt-6 p-3 bg-gray-100 border-l-4 border-black rounded-lg text-sm text-gray-800 font-medium shadow-sm">
-                <strong className="font-bold text-gray-900">IMPORTANT:</strong> This advice is general knowledge. For personalized programming, check-ins, or questions specific to your training history and medical status, <strong className="font-bold text-gray-900">please message your actual Personal Trainer!</strong>
+              </nav>
             </div>
-          </div>
-        ) : !isLoading && (
-          <div className="text-center p-8 text-gray-400">
-            <Icon name="Brain" className="w-10 h-10 mx-auto mb-3" />
-            <p>Ask a general question about fitness, nutrition, or motivation.</p>
-          </div>
-        )}
-      </div>
 
-      {/* Suggested Queries (NEW CATEGORIZED COLLAPSIBLE LAYOUT) */}
-      <div className="mb-4">
-        <p className="text-sm font-semibold text-gray-700 mb-2">Popular Searches (Click to Ask):</p>
-        <div className="space-y-2 border border-gray-300 rounded-xl overflow-hidden shadow-md">
-          {categorizedQueries.map((category) => {
-            const isExpanded = expandedCategories[category.title];
-            return (
-              <div key={category.title} className="border-b border-gray-200 last:border-b-0">
-                
-                {/* Collapsible Header/Button */}
-                <button
-                  className="flex justify-between items-center w-full p-3 text-left font-bold text-sm text-gray-800 bg-gray-50 hover:bg-gray-100 transition-colors"
-                  onClick={() => toggleCategory(category.title)}
-                  aria-expanded={isExpanded}
-                >
-                  <span>{category.title}</span>
-                  <Icon name="ChevronDown" className={`w-4 h-4 transition-transform ${isExpanded ? 'transform rotate-180' : ''}`} />
-                </button>
-                
-                {/* Collapsible Content */}
-                <div 
-                  className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[300px] opacity-100 p-3 pt-1' : 'max-h-0 opacity-0 p-0'}`}
-                >
-                  <div className="flex flex-wrap gap-2">
-                    {category.queries.map((s, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleSuggestionClick(s)}
-                        className={`text-xs px-3 py-1.5 rounded-full border border-gray-300 text-gray-600 bg-white hover:bg-gray-100 transition-colors shadow-sm
-                          ${isLoading ? 'opacity-60 cursor-not-allowed' : ''}
-                        `}
-                        disabled={isLoading}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+            {/* --- Main Content Area --- */}
+            <main className="lg:w-3/4 p-6 sm:p-10">
+              <div className="min-h-[600px] flex flex-col">
+                {renderContent()}
               </div>
-            );
-          })}
-        </div>
-      </div>
+            </main>
+          </div>
 
-
-      {/* Input Form */}
-      <form ref={formRef} onSubmit={handleSubmit} className="flex space-x-3">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="e.g., 'What is progressive overload?' or 'Best source of complex carbs?'"
-          className="flex-grow p-3 border border-gray-400 rounded-xl focus:ring-2 focus:ring-black focus:border-black transition shadow-sm"
-          disabled={isLoading}
-        />
-        <button
-          type="submit"
-          className={`p-3 rounded-xl text-white transition duration-200 shadow-md ${isLoading ? 'bg-gray-500' : 'bg-black hover:bg-gray-800'}`}
-          disabled={isLoading}
-        >
-          <Icon name="Send" className="w-6 h-6" />
-        </button>
-      </form>
-    </div>
-  );
-};
-
-
-// --- MAIN APP COMPONENT ---
-
-const App = () => {
-  const [activeSectionId, setActiveSectionId] = useState(knowledgeSections[0].id);
-  const [activeAccordion, setActiveAccordion] = useState(null);
-  const [isMenuOpen, setIsMenuOpen] = useState(false); // For mobile menu
-
-  const activeSection = knowledgeSections.find(s => s.id === activeSectionId);
-  const cardSections = knowledgeSections.filter(s => s.id !== 'home' && s.id !== 'recipes');
-
-  const currentYear = new Date().getFullYear(); // Moved up for use in the new footer
-
-  const toggleAccordion = (title) => {
-    setActiveAccordion(activeAccordion === title ? null : title);
-  };
-
-  // Close mobile menu when a section is selected
-  const handleSectionClick = (id) => {
-    setActiveSectionId(id);
-    setIsMenuOpen(false);
-    setActiveAccordion(null); // Reset accordion state when switching sections
-  };
-
-  const renderContent = () => {
-    if (!activeSection) {
-        return (
-            <div className="text-center py-20">
-              <Icon name="BookOpen" className="w-12 h-12 mx-auto text-black mb-4" /> 
-              <h2 className="2xl font-bold text-gray-900">Welcome to Your Knowledge Base</h2>
-              <p className="text-gray-500 mt-2">Select a category from the menu to start learning.</p>
-            </div>
-        );
-    }
-
-    if (activeSectionId === 'home') {
-        return <HomeContent color={activeSection.color} sections={cardSections} onNavigate={handleSectionClick} />;
-    }
-    
-    if (activeSectionId === 'ai-brain') {
-        return <AICoach />;
-    }
-    
-    // Render standard knowledge base content
-    if (activeSection.content) {
-        return (
-            <section>
-              <div className="flex items-center mb-6">
-                <Icon name={activeSection.icon} className={`w-8 h-8 mr-3 ${activeSection.color}`} />
-                <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900">{activeSection.title}</h2>
-              </div>
-              
-              <p className="mb-8 text-gray-500 text-lg border-l-4 border-black pl-4 py-2 bg-gray-50/50 rounded-lg">
-                This section contains the fundamental knowledge required for success. Review these topics regularly to build a strong foundation for your performance and fitness journey.
+          {/* --- NEW FULL-WIDTH FOOTER (React/JSX Implementation of User's Request) --- */}
+          <footer className="bg-black py-8 border-t border-white/10 w-full mt-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white/50">
+              <p className="text-xs mb-4 max-w-3xl mx-auto leading-relaxed text-red-300/80">
+                <strong>General Fitness Disclaimer:</strong> Always consult with a qualified healthcare professional before starting any new fitness program or making changes to your diet. The content on this site and within our programs is for informational purposes only and is not a substitute for medical advice or diagnosis. You engage in physical activity at your own risk.
               </p>
-
-              {/* Accordion Content */}
-              <div className="space-y-0 border border-gray-300 rounded-xl overflow-hidden shadow-lg">
-                {activeSection.content.map((item, index) => (
-                  <AccordionItem
-                    key={index}
-                    item={item}
-                    isActive={activeAccordion === item.title}
-                    toggleActive={() => toggleAccordion(item.title)}
-                  />
-                ))}
-              </div>
-            </section>
-        );
-    }
-
-    return null;
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-50 font-sans antialiased">
-      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row shadow-xl bg-white rounded-xl my-4 sm:my-8 overflow-hidden">
-        
-        {/* --- Sidebar / Mobile Menu (Pure Black) --- */}
-        <div className="lg:w-1/4 bg-black text-white p-6 shadow-2xl">
-          <header className="mb-8 flex justify-between items-center lg:block">
-            {/* Branding Block: Updated to new multi-line format */}
-            <button
-              onClick={() => handleSectionClick('home')}
-              className="transition duration-300 text-left w-full"
-            >
-                <div className="font-black text-white tracking-wider leading-none">
-                    {/* Main Title: Largest, Widest Tracking */}
-                    <div className="text-2xl sm:text-3xl tracking-widest">COACH CHRIS</div>
-                    {/* Secondary Title: Smaller, Tighter Tracking, Slightly Translucent */}
-                    <div className="text-xs tracking-tight text-white/80 mt-[-4px] leading-none">CIRCULAR ROOTS COACHING</div>
-                    {/* Tagline: Smallest, Tightest Tracking, More Translucent */}
-                    <div className="text-[10px] tracking-tighter text-white/60 leading-none">TRAIN UNCNVNTNL</div>
-                </div>
-            </button>
-            
-            <button 
-              className="lg:hidden p-2 rounded-lg text-gray-200 hover:bg-gray-800 transition"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              aria-label="Toggle navigation menu"
-            >
-              {isMenuOpen ? <Icon name="X" className="w-6 h-6" /> : <Icon name="List" className="w-6 h-6" />}
-            </button>
-          </header>
-
-          {/* Navigation Items (Visible always on desktop, conditionally on mobile) */}
-          <nav className={`${isMenuOpen ? 'block' : 'hidden'} lg:block`}>
-            <ul className="space-y-3">
-              {knowledgeSections.map((section) => (
-                <li key={section.id}>
-                  <button
-                    onClick={() => handleSectionClick(section.id)}
-                    className={`flex items-center w-full p-3 rounded-lg text-left transition duration-200 group
-                      ${activeSectionId === section.id
-                        ? `${ACCENT_CLASS} text-white shadow-lg font-bold`
-                        : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                      }`}
-                  >
-                    <Icon name={section.icon} className={`w-5 h-5 mr-3 
-                        ${activeSectionId === section.id || section.id === 'home' || section.id === 'training' || section.id === 'ai-brain' ? 'text-white' : 'text-gray-400'}
-                    `} />
-                    {section.title}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </nav>
+              <p id="copyright-text" className="text-sm font-semibold mb-1 text-white">
+                &copy; {currentYear} COACH CHRIS | CIRCULAR ROOTS COACHING | TRAIN UNCNVNTNL. All rights reserved
+              </p>
+              <p className="text-xs text-white/60">Fitter Stronger Better</p>
+            </div>
+          </footer>
+          {/* --- END NEW FOOTER --- */}
         </div>
+      );
+    };
 
-        {/* --- Main Content Area --- */}
-        <main className="lg:w-3/4 p-6 sm:p-10">
-          <div className="min-h-[600px] flex flex-col">
-            {renderContent()}
-          </div>
-          {/* Removed the old footer from here */}
-        </main>
-      </div>
-
-      {/* --- NEW FULL-WIDTH FOOTER (React/JSX Implementation of User's Request) --- */}
-      <footer className="bg-black py-8 border-t border-white/10 w-full mt-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white/50">
-          <p className="text-xs mb-4 max-w-3xl mx-auto leading-relaxed text-red-300/80">
-            <strong>General Fitness Disclaimer:</strong> Always consult with a qualified healthcare professional before starting any new fitness program or making changes to your diet. The content on this site and within our programs is for informational purposes only and is not a substitute for medical advice or diagnosis. You engage in physical activity at your own risk.
-          </p>
-          <p id="copyright-text" className="text-sm font-semibold mb-1 text-white">
-            &copy; {currentYear} COACH CHRIS | CIRCULAR ROOTS COACHING | TRAIN UNCNVNTNL. All rights reserved
-          </p>
-          <p className="text-xs text-white/60">Fitter Stronger Better</p>
-        </div>
-      </footer>
-      {/* --- END NEW FOOTER --- */}
-    </div>
-  );
-};
-
-export default App;
+    // Render the App component to the root element
+    ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
 
