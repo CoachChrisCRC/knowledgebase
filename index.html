@@ -474,9 +474,7 @@
       ];
       // --- END NEW QUERIES ---
 
-      const systemPrompt = "Act as a comprehensive, knowledge-based Q&A engine focused on fitness, nutrition, and training. Provide generalized, science-backed, and practical advice. Explicitly state that for personalized plans, diagnoses, or critical training decisions, the user must consult their actual personal trainer or medical professional. Keep responses concise and focused, using bullet points or bold text where helpful.";
-      const apiKey = ""; // API key is provided by the runtime environment
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+      const apiUrl = "/.netlify/functions/gemini_proxy";
 
       const handleSubmit = async (e) => {
         // If e exists and it's a form submit event, prevent default.
@@ -504,17 +502,8 @@
           while (attempt < maxRetries) {
             try {
               const payload = {
-                contents: [{ parts: [{ text: queryToSubmit }] }],
-                tools: [{ "google_search": {} }],
-                systemInstruction: {
-                  parts: [{ text: systemPrompt }]
-                },
+                prompt: queryToSubmit
               };
-
-              // Check if fetch is defined (it should be in a modern browser environment)
-              if (typeof fetch === 'undefined') {
-                throw new Error("The fetch API is not available in this environment.");
-              }
 
               const apiResponse = await fetch(apiUrl, {
                 method: 'POST',
@@ -523,11 +512,12 @@
               });
 
               if (!apiResponse.ok) {
-                throw new Error(`HTTP error! status: ${apiResponse.status}`);
+                const errorData = await apiResponse.json();
+                throw new Error(errorData.error || `HTTP error! status: ${apiResponse.status}`);
               }
 
               result = await apiResponse.json();
-              break; // Success, exit loop
+              break;
 
             } catch (err) {
               attempt++;
@@ -536,24 +526,12 @@
                 throw new Error("The AI Brain is currently unavailable. Please try again later.");
               }
               const delay = Math.pow(2, attempt) * 1000;
-              await sleep(delay); // Exponential backoff
+              await sleep(delay);
             }
           }
 
-          const candidate = result?.candidates?.[0];
-          const text = candidate?.content?.parts?.[0]?.text || "Sorry, I couldn't generate a helpful response right now. Please try rephrasing your question.";
-          
-          // Extract grounding sources (citations)
-          let sources = [];
-          const groundingMetadata = candidate?.groundingMetadata;
-          if (groundingMetadata && groundingMetadata.groundingAttributions) {
-              sources = groundingMetadata.groundingAttributions
-                  .map(attribution => ({
-                      uri: attribution.web?.uri,
-                      title: attribution.web?.title,
-                  }))
-                  .filter(source => source.uri && source.title);
-          }
+          const text = result?.text || "Sorry, I couldn't generate a helpful response right now. Please try rephrasing your question.";
+          const sources = result?.sources || [];
 
           setResponse({ text, sources });
 
