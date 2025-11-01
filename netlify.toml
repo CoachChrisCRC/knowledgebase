@@ -1,2 +1,6 @@
-[build]
-functions = "netlify/functions"
+# Netlify Configuration File
+
+# This tells Netlify to look for and build any serverless functions
+# inside the 'netlify/functions' folder.
+[functions]
+  directory = "netlify/functions"
